@@ -1,81 +1,48 @@
 # CaterConnect
 
-CaterConnect is a full-stack web application for managing catering services and customer interactions.
+CaterConnect is a web application for managing catering services and customer interactions.
 
-This repository is currently transitioning from a React-based frontend to a Next.js application.  
-The existing React implementation is preserved while the Next.js foundation is being introduced.
+This repository is currently being restructured to use Next.js for the frontend (App Router).
 
 ---
 
 ## Project Status
 
-**Status:** Active migration to Next.js
+- Active development (not deployed)
+- The `main` branch is being prepared as the **Next.js-based codebase**
+- The earlier React implementation will be preserved in a separate branch for reference
 
-- The current `main` branch contains the React implementation and will be moved to a separate branch when Next.js development begins.
-- A new Next.js-based setup is being prepared to become the primary codebase.
-- Feature development will continue incrementally during the migration.
-
-The project is not deployed to production at this stage.
+This repository reflects ongoing work and may change frequently.
 
 ---
 
-## Project Direction
+## Direction
 
-This repository is being migrated to Next.js to improve:
+The move to Next.js is intended to improve:
 
 - Application structure and routing
-- Long-term maintainability
-- Scalability for future features
-- Frontend and backend integration
+- Maintainability as the codebase grows
+- Long-term scalability
 
-The migration is tracked through commits and pull requests rather than static phase documentation.
-
----
-
-## Current Capabilities (React Version)
-
-### User Features
-- Authentication (login/logout)
-- Role-based access control
-- Browsing catering services
-- Order and interaction flows
-
-### Administrative Features
-- Manage service listings
-- Handle customer requests
-- Dashboard and overview views
-
-### Backend Capabilities
-- REST API with Node.js and Express
-- MongoDB with Mongoose
-- JWT-based authentication
-- Role-based authorization
-- Middleware-based request handling
+Changes are tracked through commits and pull requests.
 
 ---
 
-## Tech Stack
+## Tech Overview
 
 ### Frontend
-- React (legacy)
-- React Router
+- Next.js (App Router)
+- TypeScript
 
 ### Backend
-- Node.js
-- Express.js
-- MongoDB
-- Mongoose
-- JWT
-- bcrypt
+Backend architecture and technology choices have not been finalized yet.
 
 ---
 
-## Migration Overview
+## Notes
 
-- The React implementation will remain available during migration
-- A new Next.js foundation is being introduced
-- Features will be rebuilt incrementally
-- The React frontend will be retired once migration is complete
+- This project is under active iteration
+- APIs, data models, and infrastructure may change
 
 ---
 
