@@ -35,7 +35,7 @@ export type OTPType =
 // One-Time Password record, Short expiry (5-10 minutes), Single-use only
 export interface OTP {
     _id: Types.ObjectId;
-    userId: string;
+    userId: Types.ObjectId;
     code: string;        // 6-digit numeric code
     type: OTPType;
     expiresAt: Date;
