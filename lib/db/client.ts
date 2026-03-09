@@ -70,23 +70,6 @@ export async function connectDB(): Promise<typeof mongoose> {
     return cached.conn;
 }
 
-// Disconnect from MongoDB, Used during graceful shutdown
-export async function disconnectDB(): Promise<void> {
-    if (!cached.conn) {
-        return;
-    }
-
-    try {
-        await mongoose.disconnect();
-        cached.conn = null;
-        cached.promise = null;
-        console.log('MongoDB disconnected successfully');
-    } catch (error) {
-        console.error('MongoDB disconnection error:', error);
-        throw error;
-    }
-}
-
 // Check if MongoDB is connected
 export function isConnected(): boolean {
     return mongoose.connection.readyState === 1;
@@ -95,25 +78,6 @@ export function isConnected(): boolean {
 // Get current connection state - 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
 export function getConnectionState(): number {
     return mongoose.connection.readyState;
-}
-
-// Graceful shutdown handler
-export async function gracefulShutdown(signal: string): Promise<void> {
-    console.log(`\n${signal} received. Starting graceful shutdown...`);
-    try {
-        await disconnectDB();
-        console.log('Graceful shutdown completed');
-        process.exit(0);
-    } catch (error) {
-        console.error('Error during graceful shutdown:', error);
-        process.exit(1);
-    }
-}
-
-// Register shutdown handlers
-if (typeof process !== 'undefined' && process.on) {
-    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 }
 
 // Connection event listeners for debugging
