@@ -1,8 +1,19 @@
-import mongoose, { Schema, Model } from 'mongoose';
+import mongoose, { Schema, Model, HydratedDocument } from 'mongoose';
+import { UpdateResult, DeleteResult } from "mongodb";
 import { OTP, OTPType } from '@/types/auth';
 
+type OTPDocument = HydratedDocument<OTP>;
+interface OTPModelType extends Model<OTP> {
+    findActiveOTP(userId: string, type: OTPType): Promise<OTPDocument | null>;
+    verifyCode(userId: string, type: OTPType, code: string): Promise<OTPDocument | null>;
+    incrementAttempts(otpId: string): Promise<OTPDocument | null>;
+    invalidatePreviousOTPs(userId: string, type: OTPType): Promise<UpdateResult>;
+    hasExceededAttempts(otpId: string, maxAttempts?: number): Promise<boolean>;
+    cleanupExpiredOTPs(): Promise<DeleteResult>;
+}
+
 // One-Time Password for email verification, password reset, and MFA
-const OTPSchema = new Schema<OTP>({
+const OTPSchema = new Schema<OTP, OTPModelType>({
     userId: {
         type: Schema.Types.ObjectId,
         required: [true, 'User ID is required'],
@@ -53,20 +64,23 @@ OTPSchema.index({ userId: 1, type: 1, expiresAt: -1 });    // Index for finding 
 // TTL index - automatically delete OTPs after expiry 
 OTPSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 3600 });   // 1 hour
 
-// Static methods for OTP management
-OTPSchema.statics = {
-    // Find latest unverified, non-expired OTP for user
-    async findActiveOTP(userId: string, type: OTPType) {
+// Find latest unverified, non-expired OTP for user
+OTPSchema.static(
+    "findActiveOTP",
+    async function (userId: string, type: OTPType) {
         return this.findOne({
             userId: new mongoose.Types.ObjectId(userId),
             type,
             verified: false,
             expiresAt: { $gt: new Date() },
         }).sort({ createdAt: -1 });     // Get most recent
-    },
+    }
+);
 
-    // Verify OTP code - Returns the OTP if valid, null otherwise
-    async verifyCode(userId: string, type: OTPType, code: string) {
+// Verify OTP code - Returns the OTP if valid, null otherwise
+OTPSchema.static(
+    "verifyCode",
+    async function (userId: string, type: OTPType, code: string) {
         const otp = await this.findOne({
             userId: new mongoose.Types.ObjectId(userId),
             type,
@@ -83,19 +97,25 @@ OTPSchema.statics = {
         await otp.save();
 
         return otp;
-    },
+    }
+);
 
-    // Increment attempt counter
-    async incrementAttempts(otpId: string) {
+// Increment attempt counter
+OTPSchema.static(
+    "incrementAttempts",
+    async function (otpId: string) {
         return this.findByIdAndUpdate(
             otpId,
             { $inc: { attempts: 1 } },
             { new: true }
         );
-    },
+    }
+);
 
-    // Invalidate all previous OTPs for user and type - Called before creating new OTP
-    async invalidatePreviousOTPs(userId: string, type: OTPType) {
+// Invalidate all previous OTPs for user and type - Called before creating new OTP
+OTPSchema.static(
+    "invalidatePreviousOTPs",
+    async function (userId: string, type: OTPType) {
         return this.updateMany(
             {
                 userId: new mongoose.Types.ObjectId(userId),
@@ -104,22 +124,28 @@ OTPSchema.statics = {
             },
             { verified: true } // Mark as verified to prevent reuse
         );
-    },
+    }
+);
 
-    // Check if max attempts reached
-    async hasExceededAttempts(otpId: string, maxAttempts: number = 5) {
+// Check if max attempts reached
+OTPSchema.static(
+    "hasExceededAttempts",
+    async function (otpId: string, maxAttempts: number = 5) {
         const otp = await this.findById(otpId);
         return otp ? otp.attempts >= maxAttempts : false;
-    },
+    }
+);
 
-    // Clean up expired OTPs manually (if TTL index not working)
-    async cleanupExpiredOTPs() {
+// Clean up expired OTPs manually (if TTL index not working)
+OTPSchema.static(
+    "cleanupExpiredOTPs",
+    async function () {
         return this.deleteMany({
             expiresAt: { $lt: new Date() },
         });
-    },
-};
+    }
+);
 
 // Prevent model recompilation in Next.js development
-export const OTPModel: Model<OTP> =
-    mongoose.models.OTP || mongoose.model<OTP>('OTP', OTPSchema);
+const existingModel = mongoose.models.OTP as OTPModelType;
+export const OTPModel = existingModel || mongoose.model<OTP, OTPModelType>("OTP", OTPSchema);
