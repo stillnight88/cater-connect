@@ -1,8 +1,18 @@
-import mongoose, { Schema, Model } from 'mongoose';
+import mongoose, { Schema, Model, HydratedDocument } from 'mongoose';
+import { UpdateResult, DeleteResult } from "mongodb";
 import { RefreshToken } from '@/types/auth';
 
+type RefreshTokenDocument = HydratedDocument<RefreshToken>;
+export interface RefreshTokenModelType extends Model<RefreshToken> {
+    findActiveToken(tokenId: string): Promise<RefreshTokenDocument | null>;
+    revokeAllUserTokens(userId: string): Promise<UpdateResult>;
+    revokeToken(tokenId: string): Promise<UpdateResult>;
+    cleanupExpiredTokens(): Promise<DeleteResult>;
+    countActiveTokens(userId: string): Promise<number>;
+}
+
 // Stores refresh tokens for session management and revocation 
-const RefreshTokenSchema = new Schema<RefreshToken>({
+const RefreshTokenSchema = new Schema<RefreshToken, RefreshTokenModelType>({
     userId: {
         type: Schema.Types.ObjectId,
         required: [true, 'User ID is required'],
@@ -42,48 +52,61 @@ RefreshTokenSchema.index({ tokenId: 1, isRevoked: 1 });    // Index for token va
 // TTL index - automatically delete expired tokens after 30 days
 RefreshTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 30 * 24 * 60 * 60 });
 
-// Static methods for token management
-RefreshTokenSchema.statics = {
-    // Find active (non-revoked, non-expired) token by tokenId
-    async findActiveToken(tokenId: string) {
+// Find active (non-revoked, non-expired) token by tokenId
+RefreshTokenSchema.static(
+    "findActiveToken",
+    async function (tokenId: string) {
         return this.findOne({
             tokenId,
             isRevoked: false,
             expiresAt: { $gt: new Date() },
         });
-    },
+    }
+);
 
-    // Revoke all tokens for a user - Used during password reset or security breach
-    async revokeAllUserTokens(userId: string) {
+// Revoke all tokens for a user - Used during password reset or security breach
+RefreshTokenSchema.static(
+    "revokeAllUserTokens",
+    async function (userId: string) {
         return this.updateMany(
             { userId: new mongoose.Types.ObjectId(userId), isRevoked: false },
             { isRevoked: true }
         );
-    },
+    }
+);
 
-    // Revoke specific token - Used during logout
-    async revokeToken(tokenId: string) {
+// Revoke specific token - Used during logout
+RefreshTokenSchema.static(
+    "revokeToken",
+    async function (tokenId: string) {
         return this.updateOne({ tokenId }, { isRevoked: true });
-    },
+    }
+);
 
-    // Clean up expired tokens manually (if TTL index not working)
-    async cleanupExpiredTokens() {
+// Clean up expired tokens manually (if TTL index not working)
+RefreshTokenSchema.static(
+    "cleanupExpiredTokens",
+    async function () {
         return this.deleteMany({
             expiresAt: { $lt: new Date() },
         });
-    },
+    }
+);
 
-    // Count active tokens for a user
-    async countActiveTokens(userId: string) {
+// Count active tokens for a user
+RefreshTokenSchema.static(
+    "countActiveTokens",
+    async function (userId: string) {
         return this.countDocuments({
             userId: new mongoose.Types.ObjectId(userId),
             isRevoked: false,
             expiresAt: { $gt: new Date() },
         });
     }
-};
+);
 
 //  Prevent model recompilation in Next.js development
-export const RefreshTokenModel: Model<RefreshToken> =
-    mongoose.models.RefreshToken ||
-    mongoose.model<RefreshToken>('RefreshToken', RefreshTokenSchema);
+const existingModel = mongoose.models.RefreshToken as RefreshTokenModelType
+export const RefreshTokenModel =
+    existingModel ||
+    mongoose.model<RefreshToken, RefreshTokenModelType>('RefreshToken', RefreshTokenSchema);
