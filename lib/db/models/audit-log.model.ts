@@ -1,8 +1,35 @@
-import mongoose, { Schema, Model } from 'mongoose';
+import mongoose, { Schema, Model, HydratedDocument } from 'mongoose';
 import { AuditLog, AuditAction } from '@/types/audit';
 
+type AuditLogDocument = HydratedDocument<AuditLog>;
+
+export interface AuditLogModelType extends Model<AuditLog> {
+    logEvent(data: {
+        actorId: string | null;
+        action: AuditAction;
+        targetId?: string;
+        metadata?: Record<string, unknown>;
+        ipAddress?: string;
+        userAgent?: string;
+    }): Promise<AuditLogDocument>;
+
+    getUserActivity(
+        userId: string,
+        limit?: number,
+        skip?: number
+    ): Promise<AuditLogDocument[]>;
+
+    getEntityHistory(
+        targetId: string,
+        limit?: number,
+        skip?: number
+    ): Promise<AuditLogDocument[]>;
+
+    exportLogs(startDate: Date, endDate: Date): Promise<AuditLog[]>;
+}
+
 // Audit Log Schema - Immutable record of security-critical and business-critical actions, 
-const AuditLogSchema = new Schema<AuditLog>({
+const AuditLogSchema = new Schema<AuditLog, AuditLogModelType>({
     actorId: {
         type: Schema.Types.ObjectId,
         ref: 'User',
@@ -77,11 +104,17 @@ AuditLogSchema.pre('save', function () {
         throw new Error('Audit logs are immutable and cannot be updated');
     }
 });
+AuditLogSchema.pre(
+    ["updateOne", "updateMany", "findOneAndUpdate"],
+    function () {
+        throw new Error("Audit logs are immutable and cannot be updated");
+    }
+);
 
-// Static methods 
-AuditLogSchema.statics = {
-    // Log an audit event - Primary method for creating audit entries
-    async logEvent(data: {
+// Log an audit event - Primary method for creating audit entries
+AuditLogSchema.static(
+    "logEvent",
+    async function (data: {
         actorId: string | null;
         action: AuditAction;
         targetId?: string;
@@ -98,10 +131,13 @@ AuditLogSchema.statics = {
             userAgent: data.userAgent,
             timestamp: new Date(),
         });
-    },
+    }
+);
 
-    // Get activity timeline for a user - Shows all actions performed by the user
-    async getUserActivity(
+// Get activity timeline for a user - Shows all actions performed by the user
+AuditLogSchema.static(
+    "getUserActivity",
+    async function (
         userId: string,
         limit: number = 50,
         skip: number = 0
@@ -112,10 +148,13 @@ AuditLogSchema.statics = {
             .sort({ timestamp: -1 })
             .skip(skip)
             .limit(limit);
-    },
+    }
+);
 
-    // Get history for a specific entity - Shows all actions performed on a target 
-    async getEntityHistory(
+// Get history for a specific entity - Shows all actions performed on a target
+AuditLogSchema.static(
+    "getEntityHistory",
+    async function (
         targetId: string,
         limit: number = 50,
         skip: number = 0
@@ -127,20 +166,23 @@ AuditLogSchema.statics = {
             .skip(skip)
             .limit(limit)
             .populate('actorId', 'name email role');
-    },
+    }
+);
 
-    // Returns logs in a format suitable for export
-    async exportLogs(startDate: Date, endDate: Date) {
+// Returns logs in a format suitable for export
+AuditLogSchema.static(
+    "exportLogs",
+    async function (startDate: Date, endDate: Date) {
         return this.find({
             timestamp: { $gte: startDate, $lte: endDate },
         })
             .sort({ timestamp: 1 })
             .populate('actorId', 'name email role')
             .lean();
-    },
-};
+    }
+);
 
-export const AuditLogModel: Model<AuditLog> =
-    mongoose.models.AuditLog ||
-    mongoose.model<AuditLog>('AuditLog', AuditLogSchema);
 
+//  Prevent model recompilation in Next.js development
+const existingModel = mongoose.models.AuditLog as AuditLogModelType
+export const AuditLogModel = existingModel || mongoose.model<AuditLog>('AuditLog', AuditLogSchema);
