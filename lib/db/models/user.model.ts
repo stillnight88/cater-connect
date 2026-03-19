@@ -1,4 +1,4 @@
-import mongoose, { Schema, Model } from 'mongoose';
+import mongoose, { Schema, Model, HydratedDocument } from 'mongoose';
 import { User, UserRole } from '@/types/user';
 import isEmail from 'validator/lib/isEmail';
 
@@ -8,8 +8,23 @@ export enum Role {
     ADMIN = "admin",
 }
 
+type UserDocument = HydratedDocument<User>;
+
+export interface UserMethods {
+    isAdmin(): boolean;
+    isVendor(): boolean;
+    isCustomer(): boolean;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface UserModelType extends Model<User, {}, UserMethods> {
+    findByEmailWithPassword(email: string): Promise<UserDocument | null>;
+    findVerifiedByEmail(email: string): Promise<UserDocument | null>;
+    countByRole(role: UserRole): Promise<number>;
+}
+
 // Core identity model for all users in the system
-const UserSchema = new Schema<User>({
+const UserSchema = new Schema<User, UserModelType>({
     name: {
         type: String,
         required: [true, 'Name is required'],
@@ -64,32 +79,31 @@ UserSchema.index({ email: 1, emailVerified: 1 });   // Index for login queries
 UserSchema.index({ role: 1, createdAt: -1 });      // Index for role-based queries (admin dashboards)
 
 // Instance methods
-UserSchema.methods = {
-    isAdmin(): boolean {
-        return this.role === Role.ADMIN        // Check if user is admin
-    },
+UserSchema.method("isAdmin", function (): boolean {
+  return this.role === Role.ADMIN;     // Check if user is admin
+});
 
-    isVendor(): boolean {
-        return this.role === Role.VENDOR       // Check if user is vendor
-    },
+UserSchema.method("isVendor", function (): boolean {
+  return this.role === Role.VENDOR;   // Check if user is vendor
+});
 
-    isCustomer(): boolean {
-        return this.role === Role.CUSTOMER     // Check if user is customer
-    }
-};
+UserSchema.method("isCustomer", function (): boolean {
+  return this.role === Role.CUSTOMER;  // Check if user is customer
+});
 
-// Static methods for common queries
-UserSchema.statics = {
-    async findByEmailWithPassword(email: string) {
-        return this.findOne({ email }).select('+password');
-    },
-    async findVerifiedByEmail(email: string) {
-        return this.findOne({ email, emailVerified: true });
-    },
-    async countByRole(role: UserRole) {
-        return this.countDocuments({ role });
-    },
-};
+// Static methods
+UserSchema.static("findByEmailWithPassword", async function (email: string) {
+  return this.findOne({ email }).select("+password");
+});
+
+UserSchema.static("findVerifiedByEmail", async function (email: string) {
+  return this.findOne({ email, emailVerified: true });
+});
+
+UserSchema.static("countByRole", async function (role: UserRole) {
+  return this.countDocuments({ role });
+});
 
 // Prevent model recompilation in Next.js development
-export const UserModel: Model<User> = mongoose.models.User || mongoose.model<User>('User', UserSchema);
+const existingModel = mongoose.models.User as UserModelType;
+export const UserModel = existingModel || mongoose.model<User>('User', UserSchema);
