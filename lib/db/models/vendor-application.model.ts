@@ -1,9 +1,47 @@
-import mongoose, { Schema, Model } from 'mongoose';
+import mongoose, { Schema, Model, HydratedDocument } from 'mongoose';
 import { VendorApplication, VendorApplicationStatus } from '@/types/vendor';
 import { isValidPhoneNumber } from "libphonenumber-js";
 
+type VendorApplicationDocument = HydratedDocument<VendorApplication>;
+
+export interface VendorApplicationMethods {
+    isPending(): boolean;
+    isApproved(): boolean;
+    isRejected(): boolean;
+    approve(adminId: string): Promise<VendorApplicationDocument>;
+    reject(adminId: string, reason: string): Promise<VendorApplicationDocument>;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface VendorApplicationModelType extends Model<VendorApplication, {}, VendorApplicationMethods> {
+    findPendingByUserId(
+        userId: string
+    ): Promise<VendorApplicationDocument | null>;
+
+    hasPendingApplication(userId: string): Promise<boolean>;
+
+    getPendingApplications(
+        limit?: number
+    ): Promise<VendorApplicationDocument[]>;
+
+    getReviewedByAdmin(
+        adminId: string,
+        limit?: number
+    ): Promise<VendorApplicationDocument[]>;
+
+    getStatistics(): Promise<{
+        pending: number;
+        approved: number;
+        rejected: number;
+        total: number;
+    }>;
+
+    getUserApplications(
+        userId: string
+    ): Promise<VendorApplicationDocument[]>;
+}
 // Vendor Application Schema - Customers submit applications to become vendors, Requires admin approval before role upgrade
-const VendorApplicationSchema = new Schema<VendorApplication>({
+const VendorApplicationSchema = new Schema<VendorApplication, VendorApplicationModelType, VendorApplicationMethods>({
     userId: {
         type: Schema.Types.ObjectId,
         required: [true, 'User ID is required'],
@@ -96,99 +134,114 @@ VendorApplicationSchema.pre('save', async function () {
 });
 
 // Instance methods
-VendorApplicationSchema.methods = {
-    isPending(): boolean {
-        return this.status === 'pending';
-    },
+VendorApplicationSchema.method("isPending", function (): boolean {
+    return this.status === "pending";
+});
 
-    isApproved(): boolean {
-        return this.status === 'approved';
-    },
+VendorApplicationSchema.method("isApproved", function (): boolean {
+    return this.status === "approved";
+});
 
-    isRejected(): boolean {
-        return this.status === 'rejected';
-    },
+VendorApplicationSchema.method("isRejected", function (): boolean {
+    return this.status === "rejected";
+});
 
-    // Approve application - Sets status, reviewedBy, and reviewedAt
-    async approve(adminId: string) {
-        this.status = 'approved';
-        this.reviewedBy = new mongoose.Types.ObjectId(adminId);
-        this.reviewedAt = new Date();
-        this.rejectionReason = undefined;   // Clear any previous rejection reason
-        return this.save();
-    },
+// Approve application - Sets status, reviewedBy, and reviewedAt
+VendorApplicationSchema.method("approve", async function (adminId: string) {
+    this.status = "approved";
+    this.reviewedBy = new mongoose.Types.ObjectId(adminId);
+    this.reviewedAt = new Date();
+    this.rejectionReason = undefined;   // Clear any previous rejection reason
 
-    // Reject application - Sets status, reviewedBy, reviewedAt, and reason
-    async reject(adminId: string, reason: string) {
-        this.status = 'rejected';
+    return this.save();
+});
+
+// Reject application - Sets status, reviewedBy, reviewedAt, and reason
+VendorApplicationSchema.method(
+    "reject",
+    async function (adminId: string, reason: string) {
+        this.status = "rejected";
         this.reviewedBy = new mongoose.Types.ObjectId(adminId);
         this.reviewedAt = new Date();
         this.rejectionReason = reason;
+
         return this.save();
-    },
-};
+    }
+);
 
 // Static methods
-VendorApplicationSchema.statics = {
-    async findPendingByUserId(userId: string) {
+VendorApplicationSchema.static(
+    "findPendingByUserId",
+    async function (userId: string) {
         return this.findOne({
             userId: new mongoose.Types.ObjectId(userId),
-            status: 'pending',
+            status: "pending",
         });
-    },
+    }
+);
 
-    async hasPendingApplication(userId: string): Promise<boolean> {
+VendorApplicationSchema.static(
+    "hasPendingApplication",
+    async function (userId: string): Promise<boolean> {
         const count = await this.countDocuments({
             userId: new mongoose.Types.ObjectId(userId),
-            status: 'pending',
+            status: "pending",
         });
-        return count > 0;
-    },
 
-    // Get all pending applications (admin review queue) - Sorted by submission date (oldest first)
-    async getPendingApplications(limit: number = 50) {
-        return this.find({ status: 'pending' })
-            .populate('userId', 'name email')
+        return count > 0;
+    }
+);
+
+// Get all pending applications (admin review queue) - Sorted by submission date (oldest first)
+VendorApplicationSchema.static(
+    "getPendingApplications",
+    async function (limit: number = 50) {
+        return this.find({ status: "pending" })
+            .populate("userId", "name email")
             .sort({ submittedAt: 1 })
             .limit(limit);
-    },
+    }
+);
 
-    // Get applications reviewed by admin
-    async getReviewedByAdmin(adminId: string, limit: number = 50) {
+// Get applications reviewed by admin
+VendorApplicationSchema.static(
+    "getReviewedByAdmin",
+    async function (adminId: string, limit: number = 50) {
         return this.find({
             reviewedBy: new mongoose.Types.ObjectId(adminId),
         })
-            .populate('userId', 'name email')
+            .populate("userId", "name email")
             .sort({ reviewedAt: -1 })
             .limit(limit);
-    },
+    }
+);
 
-    // Get application statistics
-    async getStatistics() {
-        const [pending, approved, rejected, total] = await Promise.all([
-            this.countDocuments({ status: 'pending' }),
-            this.countDocuments({ status: 'approved' }),
-            this.countDocuments({ status: 'rejected' }),
-            this.countDocuments(),
-        ]);
+// Get application statistics
+VendorApplicationSchema.static("getStatistics", async function () {
+    const [pending, approved, rejected, total] = await Promise.all([
+        this.countDocuments({ status: "pending" }),
+        this.countDocuments({ status: "approved" }),
+        this.countDocuments({ status: "rejected" }),
+        this.countDocuments(),
+    ]);
 
-        return { pending, approved, rejected, total };
-    },
+    return { pending, approved, rejected, total };
+});
 
-    //  Get user's application history
-    async getUserApplications(userId: string) {
+//  Get user's application history
+VendorApplicationSchema.static(
+    "getUserApplications",
+    async function (userId: string) {
         return this.find({
             userId: new mongoose.Types.ObjectId(userId),
         })
             .sort({ submittedAt: -1 })
-            .populate('reviewedBy', 'name email');
-    },
-};
+            .populate("reviewedBy", "name email");
+    }
+);
 
 // Prevent model recompilation in Next.js development
-export const VendorApplicationModel: Model<VendorApplication> =
-    mongoose.models.VendorApplication ||
-    mongoose.model<VendorApplication>(
-        'VendorApplication',
-        VendorApplicationSchema
-    );
+const existingModel = mongoose.models.VendorApplication as VendorApplicationModelType;
+export const VendorApplicationModel =
+    existingModel ||
+    mongoose.model<VendorApplication, VendorApplicationModelType>('VendorApplication', VendorApplicationSchema);
