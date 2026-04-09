@@ -15,13 +15,6 @@ export const TOKEN_EXPIRY = {
     REFRESH_TOKEN: '7d',  // 7 days
 } as const;
 
-/**
- * Generate Access Token - Short-lived token for API authorization
- * @param userId - User's database ID
- * @param email - User's email
- * @param role - User's role
- * @returns Signed JWT access token
- */
 export function generateAccessToken(
     userId: string,
     email: string,
@@ -41,11 +34,6 @@ export function generateAccessToken(
     });
 };
 
-/**
- * Generate Refresh Token - Long-lived token for generating new access tokens
- * @param userId - User's database ID
- * @returns Object containing JWT and unique tokenId
- */
 export function generateRefreshToken(userId: string): { token: string, tokenId: string } {
     const tokenId = randomBytes(32).toString('hex');  // Generate unique token ID for database tracking and revocation
 
@@ -64,12 +52,6 @@ export function generateRefreshToken(userId: string): { token: string, tokenId: 
     return { token, tokenId };
 };
 
-/**
- * Verify Access Token - Validates signature and expiry, Returns decoded payload if valid
- * @param token - JWT access token
- * @returns Decoded token payload
- * @throws Error if token is invalid or expired
- */
 export function verifyAccessToken(token: string): AccessTokenPayload {
     try {
         const decoded = jwt.verify(token, JWT_ACCESS_SECRET!, {
@@ -77,8 +59,9 @@ export function verifyAccessToken(token: string): AccessTokenPayload {
             audience: 'caterconnect-api',
         }) as AccessTokenPayload;
 
+        // Ensure refresh tokens cannot be used as access tokens
         if (decoded.type !== 'access') {
-            throw new Error('Invalid token type');
+            throw new Error('Invalid token type');   
         }
 
         return decoded;
@@ -86,19 +69,13 @@ export function verifyAccessToken(token: string): AccessTokenPayload {
         if (error instanceof jwt.TokenExpiredError) {
             throw new Error('Access token expired');
         }
-        if (error instanceof jwt.TokenExpiredError) {
+        if (error instanceof jwt.JsonWebTokenError) {
             throw new Error('Invalid access token');
         }
         throw error;
     }
 };
 
-/**
- * Verify Refresh Token - Validates signature and expiry, Returns decoded payload if valid
- * @param token - JWT refresh token
- * @returns Decoded token payload
- * @throws Error if token is invalid or expired
- */
 export function verifyRefreshToken(token: string): RefreshTokenPayload {
     try {
         const decoded = jwt.verify(token, JWT_REFRESH_SECRET!, {
@@ -106,8 +83,9 @@ export function verifyRefreshToken(token: string): RefreshTokenPayload {
             audience: 'caterconnect-api',
         }) as RefreshTokenPayload;
 
+         // Ensure access tokens cannot be used as refresh tokens
         if (decoded.type !== 'refresh') {
-            throw new Error('Invalid token type');
+            throw new Error('Invalid token type');    
         }
 
         return decoded;
@@ -122,13 +100,8 @@ export function verifyRefreshToken(token: string): RefreshTokenPayload {
     }
 };
 
-/**
- * Decode token without verification 
- * Use only for inspecting token contents (NOT for authorization), 
- * Does not validate signature or expiry
- * @param token - JWT token
- * @returns Decoded payload or null if invalid format
- */
+// WARNING: Decodes JWT without verifying signature or expiry.
+// Only use for debugging or inspecting token contents.
 export function decodeTokenUnsafe(token: string): AccessTokenPayload | RefreshTokenPayload | null {
     try {
         return jwt.decode(token) as AccessTokenPayload | RefreshTokenPayload;
@@ -137,16 +110,12 @@ export function decodeTokenUnsafe(token: string): AccessTokenPayload | RefreshTo
     }
 };
 
-/**
- * Extract token from Authorization header - Supports "Bearer <token>" format
- * @param authHeader - Authorization header value
- * @returns Token string or null
- */
 export function extractTokenFromHeader(authHeader: string | null): string | null {
     if (!authHeader) {
         return null;
     }
 
+    // Expect Authorization header in the format: "Bearer <token>"
     const parts = authHeader.split(" ");
     if (parts.length !== 2 || parts[0] !== "Bearer") {
         return null;
