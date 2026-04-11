@@ -70,6 +70,22 @@ export async function connectDB(): Promise<typeof mongoose> {
     return cached.conn;
 }
 
+export async function disconnectDB(): Promise<void> {
+    if (!cached.conn) {
+        return;
+    }
+
+    try {
+        await mongoose.disconnect();
+        cached.conn = null;
+        cached.promise = null;
+        console.log('MongoDB disconnected successfully');
+    } catch (error) {
+        console.error('MongoDB disconnection error:', error);
+        throw error;
+    }
+};
+
 // Check if MongoDB is connected
 export function isConnected(): boolean {
     return mongoose.connection.readyState === 1;
