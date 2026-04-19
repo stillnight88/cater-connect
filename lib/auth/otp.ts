@@ -139,3 +139,11 @@ export async function canRequestOTP(
 
     return { allowed: true };
 };
+
+// Format OTP for display (with spacing), @example - formatOTPForDisplay('847293') // "847 293" 
+export function formatOTPForDisplay(code: string): string {
+    if (code.length === 6) {
+        return `${code.slice(0, 3)} ${code.slice(3)}`;
+    }
+    return code;
+};
