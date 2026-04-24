@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
-import { RefreshTokenModel } from '@/lib/db/models';
+import { createHash } from 'crypto';
+import { UserModel, RefreshTokenModel } from '@/lib/db/models';
 import {
     generateAccessToken,
     generateRefreshToken,
@@ -25,18 +26,17 @@ export async function createSession(
     role: UserRole
 ): Promise<{
     accessToken: string;
-    refreshToken: string;
-    refreshTokenId: string;
 }> {
     const accessToken = generateAccessToken(userId, email, role);
     const { token: refreshToken, tokenId: refreshTokenId } = generateRefreshToken(userId);
 
+    const tokenHash = createHash('sha256').update(refreshToken).digest('hex');
     const expiresAt = new Date(Date.now() + COOKIE_CONFIG.REFRESH_TOKEN_MAX_AGE * 1000);
 
     await RefreshTokenModel.create({
         userId,
         tokenId: refreshTokenId,
-        token: refreshToken,
+        token: tokenHash,
         expiresAt,
         isRevoked: false,
     });
@@ -51,11 +51,7 @@ export async function createSession(
         }
     );
 
-    return {
-        accessToken,
-        refreshToken,
-        refreshTokenId,
-    };
+    return { accessToken };
 };
 
 // Refresh token rotation prevents replay attacks
@@ -63,7 +59,6 @@ export async function refreshSession(currentRefreshToken: string): Promise<
     | {
         success: true;
         accessToken: string;
-        refreshToken: string;
         userId: string;
         email: string;
         role: UserRole;
@@ -74,14 +69,13 @@ export async function refreshSession(currentRefreshToken: string): Promise<
         const payload = verifyRefreshToken(currentRefreshToken);
 
         const tokenDoc = await RefreshTokenModel.findActiveToken(payload.tokenId);
-        if (tokenDoc) {
+        if (!tokenDoc) {
             return {
                 success: false,
                 error: 'Refresh token invalid or revoked',
             };
         }
 
-        const { UserModel } = await import('@/lib/db/models');
         const user = await UserModel.findById(payload.userId);
 
         if (!user) {
@@ -99,7 +93,7 @@ export async function refreshSession(currentRefreshToken: string): Promise<
 
         await RefreshTokenModel.revokeToken(payload.tokenId);
 
-        const { accessToken, refreshToken } = await createSession(
+        const { accessToken } = await createSession(
             user._id.toString(),
             user.email,
             user.role
@@ -108,7 +102,6 @@ export async function refreshSession(currentRefreshToken: string): Promise<
         return {
             success: true,
             accessToken,
-            refreshToken,
             userId: user._id.toString(),
             email: user.email,
             role: user.role,
@@ -141,10 +134,10 @@ export async function logout(refreshToken?: string): Promise<void> {
 };
 
 export async function revokeAllUserSessions(userId: string): Promise<void> {
-  await RefreshTokenModel.revokeAllUserTokens(userId);
+    await RefreshTokenModel.revokeAllUserTokens(userId);
 };
 
 export async function getActiveSessionsCount(userId: string): Promise<number> {
-  return await RefreshTokenModel.countActiveTokens(userId);
+    return await RefreshTokenModel.countActiveTokens(userId);
 };
 
