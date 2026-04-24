@@ -8,6 +8,7 @@ import {
   VendorApplicationSubmittedJobData,
   VendorApplicationApprovedJobData,
   VendorApplicationRejectedJobData,
+  redisConnection
 } from "./queue";
 import {
   generateVerifyEmailTemplate,
@@ -65,7 +66,7 @@ async function processVerifyEmail(data: VerifyEmailJobData) {
 
   return await sendEmail(
     data.email,
-    "Password Reset Request - CaterConnect",
+    "Verify Your Email - CaterConnect",
     react,
   );
 }
@@ -138,9 +139,13 @@ async function processVendorApplicationRejected(
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function processEmailJob(job: Job<EmailJobData>): Promise<any> {
-  console.log(`📧 Processing email job: ${job.name} (${job.id})`);
+
+async function processEmailJob(job: Job<EmailJobData>): Promise<{
+  success: boolean;
+  messageId?: string;
+  error?: string;
+}> {
+  console.log(`Processing email job: ${job.name} (${job.id})`);
 
   let result;
 
@@ -183,21 +188,13 @@ async function processEmailJob(job: Job<EmailJobData>): Promise<any> {
 };
 
 export const emailWorker = new Worker<EmailJobData>(
-  EMAIL_QUEUE_NAME,
-  processEmailJob,
-  {
-    connection: {
-      host: process.env.REDIS_HOST,
-      port: parseInt(process.env.REDIS_PORT || '6379'),
-      password: process.env.REDIS_PASSWORD,
-      maxRetriesPerRequest: null,
-    },
-    concurrency: 5, // Process 5 emails concurrently
-    limiter: {
-      max: 10, // Maximum 10 jobs per duration
-      duration: 1000, // per 1 second (rate limiting)
-    },
-  },
+    EMAIL_QUEUE_NAME,
+    processEmailJob,
+    {
+        connection: redisConnection,  
+        concurrency: 5,
+        limiter: { max: 10, duration: 1000 },
+    }
 );
 
 // Worker event handlers
@@ -223,15 +220,3 @@ export async function closeEmailWorker() {
   console.log('Email worker closed');
 };
 
-// Test email sending (development only)
-export async function sendTestEmail(to: string) {
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('Test emails not allowed in production');
-  }
-
-  return await sendEmail(
-    to,
-    'Test Email - CaterConnect',
-    '<h1>Test Email</h1><p>This is a test email from CaterConnect.</p>',
-  );
-};

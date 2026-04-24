@@ -5,7 +5,7 @@ const REDIS_PORT = parseInt(process.env.REDIS_PORT || '6379');
 const REDIS_PASSWORD = process.env.REDIS_PASSWORD;
 const EMAIL_QUEUE_NAME = 'email-queue';
 
-const redisConnection = {
+export const redisConnection = {
     host: REDIS_HOST,
     port: REDIS_PORT,
     password: REDIS_PASSWORD,
@@ -91,37 +91,37 @@ export const emailQueueEvents = new QueueEvents(EMAIL_QUEUE_NAME, { connection: 
 
 // Email Queue Helper Functions
 export async function queueVerifyEmail(data: VerifyEmailJobData) {
-    return await emailQueue.add(EMAIL_QUEUE_NAME, data, {
+    return await emailQueue.add('verify-email', data, {
         priority: 1,   // High priority
-        jobId: `verify-${data.email}`,
+        jobId: `verify-email-${data.email}`,
     });
 };
 
 export async function queuePasswordReset(data: PasswordResetJobData) {
     return await emailQueue.add('password-reset', data, {
         priority: 1,   // High priority
-        jobId: `verify-${data.email}`,
+        jobId: `pw-reset-${data.email}`,
     });
 };
 
 export async function queueMFAOTP(data: MFAOTPJobData) {
     return await emailQueue.add('mfa-otp', data, {
         priority: 1,    // High priority
-        jobId: `verify-${data.email}`,
+        jobId: `mfa-${data.email}`,
     });
 };
 
 export async function queueVendorApplicationSubmitted(data: VendorApplicationSubmittedJobData) {
     return await emailQueue.add('vendor-application-submitted', data, {
         priority: 2,   // Normal priority
-        jobId: `verify-${data.email}`,
+        jobId: `vendor-submitted-${data.email}`,
     });
 };
 
 export async function queueVendorApplicationApproved(data: VendorApplicationApprovedJobData) {
     return await emailQueue.add('vendor-application-approved', data, {
         priority: 2,   // Normal priority
-        jobId: `verify-${data.email}`,
+        jobId: `vendor-approved-${data.email}`,
     });
 };
 
@@ -141,7 +141,7 @@ export async function getQueueStats() {
 
 // Get failed jobs for debugging
 export async function getFailedJobs(limit: number = 50) {
-    return await emailQueue.getFailed(0, limit);
+    return await emailQueue.getJobs(['failed'], 0, limit);
 };
 
 export async function retryFailedJob(jobId: string) {
@@ -173,9 +173,10 @@ if (process.env.NODE_ENV === 'development') {
     });
 }
 
-export async function isQueueHealthy() {
+export async function isQueueHealthy(): Promise<boolean> {
     try {
-        (await emailQueue.client).ping();
+        const client = await emailQueue.waitUntilReady();
+        await client.ping();
         return true;
     } catch (error) {
         console.error('Queue health check failed:', error);
