@@ -75,7 +75,7 @@ export function attachSessionToRequest(request: NextRequest, session: Session): 
     requestHeaders.set('x-user-session', JSON.stringify(session));
     requestHeaders.set('x-user-id', session.userId);
     requestHeaders.set('x-user-email', session.email);
-    requestHeaders.set('x-user-role', session.userId);
+    requestHeaders.set('x-user-role', session.role);
 
     return new NextRequest(request, {
         headers: requestHeaders
