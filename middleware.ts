@@ -48,7 +48,7 @@ function isPublicRoute(pathname: string): boolean {
         if (pathname === route) return true;
 
         // Wildcard match 
-        if (pathname.endsWith('/*')) {
+        if (route.endsWith('/*')) {
             const baseRoute = pathname.slice(0, -2);
             return pathname.startsWith(baseRoute);
         }
@@ -70,16 +70,6 @@ export async function middleware(request: NextRequest) {
 
     if (process.env.NODE_ENV === 'development') {
         console.log(`[Middleware] ${request.method} ${pathname}`);
-    }
-
-    // Skip middleware for static files, Next.js internals, and public assets
-    if (
-        pathname.startsWith('/_next') ||
-        pathname.startsWith('/static') ||
-        pathname.includes('/favicon.ico') ||
-        pathname.match(/\.(png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/)
-    ) {
-        return NextResponse.next();
     }
 
     if (isPublicRoute(pathname)) {
@@ -119,4 +109,11 @@ export async function middleware(request: NextRequest) {
     }
 
     return NextResponse.next();
+};
+
+// Skip middleware for static files, Next.js internals, and public assets
+export const config = {
+    matcher: [
+        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    ],
 };
