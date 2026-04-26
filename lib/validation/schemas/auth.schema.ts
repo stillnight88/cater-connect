@@ -41,7 +41,7 @@ export const verifyEmailSchema = z.object({
     email: emailSchema,
     code: otpCodeSchema
 });
-export type VerifyEmailInput = z.infer<typeof signupSchema>;
+export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
 
 export const loginSchema = z.object({
     email: emailSchema,
