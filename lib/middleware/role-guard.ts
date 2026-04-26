@@ -40,11 +40,11 @@ export function hasPermission(session: Session, permission: Permission): boolean
     return allowedRoles.includes(session.role as any);
 };
 
-export function hasAllPermissions(session: Session, permissions: Permission[]) {
+export function hasAllPermissions(session: Session, permissions: Permission[]): boolean {
     return permissions.every((permission) => hasPermission(session, permission));
 };
 
-export function hasAnyPermissions(session: Session, permissions: Permission[]) {
+export function hasAnyPermissions(session: Session, permissions: Permission[]): boolean {
     return permissions.some((permission) => hasPermission(session, permission));
 };
 
