@@ -15,3 +15,7 @@ export function formatZodError(error: ZodError): FormattedError[] {
         message: err.message
     }));
 };
+
+export function isZodError(error: unknown): error is ZodError {
+    return error instanceof ZodError;
+};
