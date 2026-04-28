@@ -1,11 +1,8 @@
 import { AuditLogModel } from '@/lib/db/models';
 import { CreateAuditLogInput } from '@/types/audit';
-import { connectDB } from '@/lib/db/client';
 
 export async function logAuditEvent(input: CreateAuditLogInput): Promise<void> {
     try {
-        await connectDB();
-
         await AuditLogModel.logEvent({
             actorId: input.actorId,
             action: input.action,
