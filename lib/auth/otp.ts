@@ -1,5 +1,6 @@
 import { OTPModel } from '@/lib/db/models';
 import { OTPType } from '@/types/auth';
+import mongoose from 'mongoose';
 
 // OTP Configuration
 export const OTP_CONFIG = {
@@ -62,22 +63,6 @@ export async function verifyOTP(
         };
     }
 
-    // Check if already verified
-    if (otp.verified) {
-        return {
-            success: false,
-            error: 'This OTP has already been used.',
-        };
-    }
-
-    // Check if expired
-    if (otp.expiresAt < new Date()) {
-        return {
-            success: false,
-            error: 'OTP has expired. Please request a new one.',
-        };
-    }
-
     // Check max attempts
     if (otp.attempts >= OTP_CONFIG.MAX_ATTEMPTS) {
         return {
@@ -116,7 +101,10 @@ export async function canRequestOTP(
     | { allowed: true }
     | { allowed: false; waitSeconds: number; lastRequestedAt: Date }
 > {
-    const lastOTP = await OTPModel.findOne({ userId, type })
+    const lastOTP = await OTPModel.findOne({
+        userId: new mongoose.Types.ObjectId(userId),
+        type
+    })
         .sort({ createdAt: -1 })
         .limit(1);
 
@@ -146,4 +134,25 @@ export function formatOTPForDisplay(code: string): string {
         return `${code.slice(0, 3)} ${code.slice(3)}`;
     }
     return code;
+};
+
+// Invalidate all OTPs or only email verification OTPs
+export async function invalidateUserOTPs(
+    userId: string,
+    type?: OTPType
+): Promise<void> {
+    const filter: {
+        userId: mongoose.Types.ObjectId;
+        verified: boolean;
+        type?: OTPType;
+    } = {
+        userId: new mongoose.Types.ObjectId(userId),
+        verified: false,
+    };
+
+    if (type) {
+        filter.type = type;
+    }
+
+    await OTPModel.updateMany(filter, { verified: true });
 };
