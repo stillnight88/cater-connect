@@ -66,9 +66,9 @@ const VendorApplicationSchema = new Schema<VendorApplication, VendorApplicationM
         type: String,
         required: [true, 'Phone number is required'],
         trim: true,
-        unique: true,
+        // unique: true, - prevents reapplication with same phone
         validate: {
-            validator: (value: string) => isValidPhoneNumber(value),
+            validator: (value: string) => isValidPhoneNumber(value, 'IN'),
             message: "Please provide a valid phone number",
         },
     },

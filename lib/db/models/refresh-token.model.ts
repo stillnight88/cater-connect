@@ -33,7 +33,6 @@ const RefreshTokenSchema = new Schema<RefreshToken, RefreshTokenModelType>({
     expiresAt: {
         type: Date,
         required: [true, 'Expiry date is required'],
-        unique: true
     },
     isRevoked: {
         type: Boolean,

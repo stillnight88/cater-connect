@@ -78,7 +78,7 @@ const VendorProfileSchema = new Schema<VendorProfile, VendorProfileModelType, Ve
         trim: true,
         unique: true,
         validate: {
-            validator: (value: string) => isValidPhoneNumber(value),
+            validator: (value: string) => isValidPhoneNumber(value, 'IN'),
             message: "Please provide a valid phone number",
         },
     },
