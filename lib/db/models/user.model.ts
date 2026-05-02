@@ -8,7 +8,7 @@ export enum Role {
     ADMIN = "admin",
 }
 
-type UserDocument = HydratedDocument<User>;
+type UserDocument = HydratedDocument<User,UserMethods>;
 
 export interface UserMethods {
     isAdmin(): boolean;
@@ -24,7 +24,7 @@ export interface UserModelType extends Model<User, {}, UserMethods> {
 }
 
 // Core identity model for all users in the system
-const UserSchema = new Schema<User, UserModelType>({
+const UserSchema = new Schema<User, UserModelType,UserMethods>({
     name: {
         type: String,
         required: [true, 'Name is required'],
@@ -106,4 +106,4 @@ UserSchema.static("countByRole", async function (role: UserRole) {
 
 // Prevent model recompilation in Next.js development
 const existingModel = mongoose.models.User as UserModelType;
-export const UserModel = existingModel || mongoose.model<User>('User', UserSchema);
+export const UserModel = existingModel || mongoose.model<User,UserModelType>('User', UserSchema);
