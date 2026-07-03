@@ -15,6 +15,7 @@ const PUBLIC_ROUTES = [
     '/api/auth/reset-password',
     '/api/auth/mfa/request',
     '/api/auth/mfa/verify',
+    '/api/auth/resend-verification',
 
     // Public vendor routes
     '/api/vendors',
@@ -26,22 +27,16 @@ const PUBLIC_ROUTES = [
 
 // authentication required
 const PROTECTED_ROUTES = [
-    // User routes
     '/api/user',
-
-    // Vendor routes (vendor-only)
     '/api/vendor',
-
-    // Admin routes (admin-only)
     '/api/admin',
-
-    // Vendor application
     '/api/vendor-application',
+    '/api/auth/me', 
 ];
 
-const ADMIN_ROUTES = [
-    '/api/admin',
-];
+// const ADMIN_ROUTES = [
+//     '/api/admin',
+// ];
 
 function isPublicRoute(pathname: string): boolean {
     return PUBLIC_ROUTES.some((route) => {
@@ -65,7 +60,7 @@ function isProtectedRoute(pathname: string): boolean {
     });
 };
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     if (process.env.NODE_ENV === 'development') {
