@@ -8,9 +8,8 @@ import type {
     ResetPasswordInput,
     ResendVerificationInput,
 } from '@/lib/validation/schemas';
-import type { UserRole } from '@/types/user';
+import type { UserRole, UserPublic } from '@/types/user';
 import { apiPost, ApiError } from './client'
-
 
 export interface SignupResponse {
     success: true;
@@ -88,6 +87,11 @@ export interface RefreshResponse {
     user: { id: string; email: string; role: UserRole };
 }
 
+export interface MeResponse {
+    success: true;
+    user: UserPublic;
+}
+
 export async function signupApi(input: SignupInput): Promise<SignupResponse | ApiError> {
     return apiPost<SignupResponse>('/api/auth/signup', { body: input });
 };
@@ -127,4 +131,22 @@ export async function logoutApi(): Promise<LogoutResponse | ApiError> {
 
 export async function refreshApi(): Promise<RefreshResponse | ApiError> {
     return apiPost<RefreshResponse>('/api/auth/refresh');  // No body — refresh token comes from httpOnly cookie automatically
+};
+
+export async function meApi(accessToken: string): Promise<MeResponse | ApiError> {
+    try {
+        const response = await fetch('/api/auth/me', {
+            method: 'GET',
+            headers: { Authorization: `Bearer ${accessToken}`, },
+            credentials: 'include',
+        });
+
+        const data = await response.json();
+        return data as MeResponse | ApiError;
+    } catch {
+        return {
+            success: false,
+            error: 'Network error. Please check your connection.',
+        } satisfies ApiError;
+    }
 };

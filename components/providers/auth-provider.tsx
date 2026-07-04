@@ -14,20 +14,19 @@ import {
   isTokenExpired,
   type ClientUser,
 } from "@/lib/auth/client-session";
-import { refreshApi, logoutApi } from "@/lib/api/auth-api";
+import { refreshApi, logoutApi, meApi } from "@/lib/api/auth-api";
 import type { UserRole } from "@/types/user";
 
 interface AuthContextValue {
   // State
   user: ClientUser | null;
-  accessToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean; // true only during initial session restore on mount
 
   // Actions
-  login: (accessToken: string, name: string) => void;
+  login: (accessToken: string) => Promise<void>;
   logout: () => Promise<void>;
-  getAccessToken: () => string | null; 
+  getAccessToken: () => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -44,6 +43,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Ref for the proactive refresh timer, Using ref so it survives re-renders without being a dependency
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const performRefreshRef = useRef<() => Promise<string | null>>(
+    async () => null,
+  );
+
+  const hydrateUserProfile = useCallback(async (token: string, fallback: ClientUser) => {
+    const result = await meApi(token);
+    if (result.success) {
+      setUser({
+        userId: result.user.id,
+        email: result.user.email,
+        role: result.user.role,
+        name: result.user.name,
+      });
+    } else {
+      setUser(fallback);
+    }
+  }, [])
+
   // Called after every successful token acquisition, Refreshes 60 seconds before expiry
   const scheduleRefresh = useCallback((token: string) => {
     if (refreshTimerRef.current) {
@@ -53,18 +70,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const expiry = getTokenExpiry(token);
     if (!expiry) return;
 
-    const now = Date.now();
-    const refreshIn = expiry - now - 60_000; // 60s before expiry
+    const refreshIn = expiry - Date.now() - 60_000; // 60s before expiry
 
     if (refreshIn <= 0) {
-      void performRefresh();
+      void performRefreshRef.current();
       return;
     }
 
     refreshTimerRef.current = setTimeout(() => {
-      void performRefresh();
+      void performRefreshRef.current();
     }, refreshIn);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
 
   // Calls /api/auth/refresh — uses httpOnly cookie automatically
@@ -89,16 +105,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     setAccessToken(newToken);
-    // JWT doesn't carry name
-    setUser((prev) => ({
-      ...parsed,
-      name: prev?.name,
-    }));
     scheduleRefresh(newToken);
+    await hydrateUserProfile(newToken, parsed);
+
     return newToken;
-  }, [scheduleRefresh]);
+  }, [scheduleRefresh, hydrateUserProfile]);
 
-
+  useEffect(() => {
+    performRefreshRef.current = performRefresh;
+  }, [performRefresh]);
 
   // call /api/auth/refresh on load
   // If the cookie exists and is valid → session is restored silently
@@ -116,8 +131,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           const parsed = parseAccessToken(result.accessToken);
           if (parsed && !cancelled) {
             setAccessToken(result.accessToken);
-            setUser(parsed);
             scheduleRefresh(result.accessToken);
+            await hydrateUserProfile(result.accessToken, parsed);
           }
         }
       } catch {
@@ -131,8 +146,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     return () => {
       cancelled = true;
+      if (refreshTimerRef.current) {
+        clearTimeout(refreshTimerRef.current);
+      }
     };
-  }, [scheduleRefresh]);
+  }, [scheduleRefresh, hydrateUserProfile]);
 
   useEffect(() => {
     return () => {
@@ -143,15 +161,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const login = useCallback(
-    (newAccessToken: string, name: string) => {
+    async (newAccessToken: string) => {
       const parsed = parseAccessToken(newAccessToken);
       if (!parsed) return;
 
       setAccessToken(newAccessToken);
-      setUser({ ...parsed, name });
       scheduleRefresh(newAccessToken);
+      await hydrateUserProfile(newAccessToken, parsed);
     },
-    [scheduleRefresh],
+    [scheduleRefresh, hydrateUserProfile],
   );
 
   const logout = useCallback(async () => {
@@ -170,7 +188,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
 
-  const getAccessToken = useCallback((): string | null => {
+  const getAccessToken = useCallback(async (): Promise<string | null> => {
     if (!accessToken) return null;
     if (isTokenExpired(accessToken)) {
       void performRefresh();
@@ -181,7 +199,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const value: AuthContextValue = {
     user,
-    accessToken,
     isAuthenticated: !!accessToken && !!user,
     isLoading,
     login,
@@ -200,22 +217,7 @@ export function useAuth(): AuthContextValue {
   return context;
 }
 
-export function useIsAdmin(): boolean {
-  const { user } = useAuth();
-  return user?.role === "admin";
-}
-
-export function useIsVendor(): boolean {
-  const { user } = useAuth();
-  return user?.role === "vendor";
-}
-
-export function useIsCustomer(): boolean {
-  const { user } = useAuth();
-  return user?.role === "customer";
-}
-
-export function useRequireRole(role: UserRole): boolean {
+export function useHasRole(role: UserRole): boolean {
   const { user } = useAuth();
   return user?.role === role;
 }
