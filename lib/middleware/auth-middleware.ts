@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAccessToken, extractTokenFromHeader } from '@/lib/auth/tokens';
+import { verifyAccessToken, extractTokenFromHeader } from '@/lib/auth/tokens.edge';
 import { Session } from '@/types/auth';
 
 export interface AuthResult {
@@ -23,7 +23,7 @@ export async function authenticateRequest(request: NextRequest): Promise<AuthRes
     }
 
     try {
-        const payload = verifyAccessToken(token);
+        const payload = await verifyAccessToken(token);
 
         const session: Session = {
             userId: payload.userId,
