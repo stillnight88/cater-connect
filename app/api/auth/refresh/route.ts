@@ -13,19 +13,16 @@ export async function POST(request: NextRequest) {
         let refreshToken = cookieStore.get('refresh_token')?.value;
 
         if (!refreshToken) {
-            const body = await request.json();
-            const validated = refreshTokenSchema.parse(body);
-            refreshToken = validated.refreshToken;
-        }
-
-        if (!refreshToken) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    error: 'Refresh token required',
-                },
-                { status: 401 }
-            );
+            try {
+                const body = await request.json();
+                const validated = refreshTokenSchema.parse(body);
+                refreshToken = validated.refreshToken;
+            } catch {
+                return NextResponse.json(
+                    { success: false, error: 'Refresh token is required' },
+                    { status: 400 }
+                );
+            }
         }
 
         const result = await refreshSession(refreshToken);
