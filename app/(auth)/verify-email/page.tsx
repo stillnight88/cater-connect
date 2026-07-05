@@ -36,7 +36,7 @@ import {
     InputOTPSlot,
 } from '@/components/ui/input-otp';
 
-export function VerifyEmailPage() {
+export default function VerifyEmailPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { isAuthenticated, isLoading } = useAuth();

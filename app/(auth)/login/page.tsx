@@ -1,3 +1,5 @@
+'use client'
+
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -108,7 +110,7 @@ export default function LoginPage() {
             return;
         }
 
-        login(result.accessToken, result.user.name);
+        await login(result.accessToken);
         toast.success(`Welcome back, ${result.user.name}!`);
         router.replace(redirectTo);
     };
@@ -141,7 +143,7 @@ export default function LoginPage() {
             return;
         }
 
-        login(result.accessToken, result.user.name);
+        await login(result.accessToken);
         toast.success(`Welcome back, ${result.user.name}!`);
         router.replace(redirectTo);
     }
