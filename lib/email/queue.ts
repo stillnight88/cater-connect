@@ -1,7 +1,7 @@
 import { Queue, QueueEvents } from 'bullmq';
 
-const REDIS_HOST = process.env.REDIS_HOST || 'localhost';
-const REDIS_PORT = parseInt(process.env.REDIS_PORT || '6379');
+const REDIS_HOST = process.env.REDIS_HOST!;
+const REDIS_PORT = Number(process.env.REDIS_PORT!);
 const REDIS_PASSWORD = process.env.REDIS_PASSWORD;
 const EMAIL_QUEUE_NAME = 'email-queue';
 
@@ -93,35 +93,35 @@ export const emailQueueEvents = new QueueEvents(EMAIL_QUEUE_NAME, { connection: 
 export async function queueVerifyEmail(data: VerifyEmailJobData) {
     return await emailQueue.add('verify-email', data, {
         priority: 1,   // High priority
-        jobId: `verify-email-${data.email}`,
+        jobId: `verify-email-${data.email}-${Date.now()}`,
     });
 };
 
 export async function queuePasswordReset(data: PasswordResetJobData) {
     return await emailQueue.add('password-reset', data, {
         priority: 1,   // High priority
-        jobId: `pw-reset-${data.email}`,
+        jobId: `pw-reset-${data.email}-${Date.now()}`,
     });
 };
 
 export async function queueMFAOTP(data: MFAOTPJobData) {
     return await emailQueue.add('mfa-otp', data, {
         priority: 1,    // High priority
-        jobId: `mfa-${data.email}`,
+        jobId: `mfa-${data.email}-${Date.now()}`,
     });
 };
 
 export async function queueVendorApplicationSubmitted(data: VendorApplicationSubmittedJobData) {
     return await emailQueue.add('vendor-application-submitted', data, {
         priority: 2,   // Normal priority
-        jobId: `vendor-submitted-${data.email}`,
+        jobId: `vendor-submitted-${data.email}-${Date.now()}`,
     });
 };
 
 export async function queueVendorApplicationApproved(data: VendorApplicationApprovedJobData) {
     return await emailQueue.add('vendor-application-approved', data, {
         priority: 2,   // Normal priority
-        jobId: `vendor-approved-${data.email}`,
+        jobId: `vendor-approved-${data.email}-${Date.now()}`,
     });
 };
 
