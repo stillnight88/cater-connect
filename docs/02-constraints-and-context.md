@@ -6,7 +6,7 @@
 
 ## 1. Time & Effort Constraints
 
-- Time Budget: 4 months
+- Estimated Development Timeline: Approximately 6 months (part-time)
 - Effort Level: Casual but consistent (not full-time)
 
 ### Implications
@@ -45,23 +45,22 @@ Priority Order:
 
 - Single database instance is sufficient.
 - No need for microservices.
-- Redis used for learning + moderate optimization, not scaling to millions.
+- Redis is used as supporting infrastructure for BullMQ-based background job processing.
 - Basic indexing strategy is enough.
 
 ---
 
 ## 4. Hosting & Environment Constraints
 
-- Hosting: Render
+- Hosting: Vercel
 - Budget Sensitivity: Low (learning-focused)
-- Infrastructure Complexity: Minimal
+- Infrastructure Complexity: Moderate
 
 ### Implications
 
-- Accept cold starts.
-- Avoid heavy background processing.
-- Prefer stateless architecture.
-- Keep environment setup simple (dev + prod only).
+- Optimize for Next.js App Router deployment.
+- Keep environment configuration simple (development + production).
+- Offload long-running tasks to background workers.
 
 ---
 
@@ -88,6 +87,14 @@ Because of these constraints, the project will NOT:
 - Implement advanced distributed systems patterns
 - Optimize prematurely for global scaling
 - Add complex CI/CD pipelines early
+
+---
+
+## 7. Architectural Flexibility
+
+- Major architectural decisions may evolve during implementation.
+
+- Planning documents should be updated when implementation reveals better designs, provided the original project goals and constraints remain unchanged.
 
 ---
 
