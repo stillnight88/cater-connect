@@ -1,163 +1,185 @@
 # Phase 11 — State & Data Strategy
 
-> Purpose: Define how data is stored, fetched, cached, and synchronized across UI and server.
+> **Purpose:** Define how application state is owned, stored, synchronized, and refreshed across the client and server while maintaining data consistency throughout the system.
+
+This phase focuses on **state management strategy**, not API design, authentication implementation, or system architecture.
 
 ---
 
-## 1. State Categories
+# 1. State Categories
 
-### Server State (Source of Truth)
+The application manages several categories of state, each with a different owner and lifecycle.
 
-Stored in MongoDB:
+## Server State (Source of Truth)
+
+Persistent business data stored in MongoDB.
+
+Examples:
 
 - Users
-- Caterers
+- Vendor Applications
+- Vendor Profiles
 - Services
 - Bookings
 - Reviews
 
-Server state is authoritative.
-Client must never override it.
+The server is always the authoritative owner of business state.
+
+Client applications must never override server-managed data.
 
 ---
 
-### Client State (UI State)
+## Client State (UI State)
 
-Stored in React components:
+Temporary state used to manage user interactions.
+
+Examples:
 
 - Form inputs
 - Search filters
-- Modal visibility
-- Loading and error states
+- Dialog visibility
+- Loading indicators
+- Error messages
+- Local UI preferences
 
-Client state is ephemeral and disposable.
-
----
-
-### Cached State (Performance Layer)
-
-Stored in Redis:
-
-- Popular caterer lists
-- Service details
-- Rate limiting counters
-
-Cache is disposable and must never be treated as permanent storage.
+Client state is temporary and may be discarded without affecting business data.
 
 ---
 
-## 2. Next.js Data Fetching Strategy
+## Cached State (Deferred Decision)
 
-### Read Operations
+> **Decision Status:** Deferred
 
-Primary approach:
+A dedicated caching strategy has **not yet been finalized**.
 
-- Use Server Components for read-heavy pages.
-- Fetch data directly on the server.
-- Leverage built-in caching when appropriate.
+Current assumptions:
 
-For interactive UI:
+- MongoDB remains the single source of truth.
+- Any future cache will exist only as a performance optimization.
+- Cached data must never become the authoritative source of business state.
 
-- Use Client Components receiving server-fetched props.
-
----
-
-### Write Operations
-
-Use:
-
-- Server Actions for form submissions.
-- API Routes for reusable endpoints.
-
-After successful writes:
-
-- Use revalidation (revalidatePath / revalidateTag).
-- Invalidate Redis cache where necessary.
-- Avoid blind refetching when possible.
+The specific caching strategy, cache lifetime, cache invalidation rules, and cacheable resources will be defined when performance requirements justify introducing caching.
 
 ---
 
-## 3. Cache Strategy
+# 2. State Ownership
 
-Cacheable Endpoints:
+Each category of state has a clearly defined owner.
 
-- Caterer list (location-based)
-- Service details
-- Review list
+| State | Primary Owner |
+|--------|---------------|
+| UI State | Client |
+| Business State | Server |
+| Persistent Data | MongoDB |
+| Cached Data | Deferred (Future Decision) |
 
-Cache Rules:
-
-- Cache duration kept short (to reduce staleness).
-- Invalidate cache after:
-  - Review creation
-  - Service update
-  - Booking affecting rating
-
-Redis is always secondary to MongoDB.
+Every piece of state should have one authoritative owner.
 
 ---
 
-## 4. Booking State Consistency
+# 3. Read Strategy
 
-Booking lifecycle must:
+General principles:
 
-- Be updated only via server logic.
-- Use atomic database operations where possible.
-- Avoid race conditions in status transitions.
-
-Client must always request fresh booking status.
-
-No optimistic UI for booking state transitions.
+- Read-heavy pages should retrieve data on the server whenever practical.
+- Interactive interfaces should consume trusted server-provided data.
+- Client-side state should support presentation, not replace business data.
+- Frequently changing business data should be refreshed when necessary.
 
 ---
 
-## 5. Optimistic UI Policy
+# 4. Write Strategy
 
-Allowed:
+All business state modifications occur through trusted server operations.
 
-- Minor UI interactions (e.g., toggling favorites in Phase 2)
+General workflow:
 
-Not Allowed:
+1. Validate incoming data.
+2. Validate authentication and authorization.
+3. Apply business rules.
+4. Persist changes.
+5. Refresh affected application state.
+
+The client never modifies business state directly.
+
+---
+
+# 5. Business State Consistency
+
+Business workflows that use state transitions must remain consistent.
+
+Examples include:
+
+- Booking lifecycle
+- Vendor Application lifecycle
+
+General principles:
+
+- State transitions are controlled by the server.
+- Invalid transitions are rejected.
+- Business invariants are always enforced.
+- Related updates should remain consistent.
+
+---
+
+# 6. Optimistic UI Policy
+
+Optimistic updates should only be used when temporary inconsistencies cannot affect business correctness.
+
+Potentially appropriate:
+
+- UI preferences
+- Temporary interface interactions
+
+Not appropriate:
 
 - Booking creation
-- Booking status updates
+- Booking status changes
+- Vendor application approval
 - Review creation
 
-Reason:
-Trust and state integrity are more important than perceived speed.
+Business integrity always takes priority over perceived responsiveness.
 
 ---
 
-## 6. Authentication State Flow
+# 7. Protected State Access
 
-- Session validated on server for protected pages.
-- Server Components receive session via auth helpers.
-- Client Components use session hook only for UI adjustments.
-- Authorization always rechecked server-side.
+Protected business data should only be exposed after successful server-side verification.
 
-Client session is never trusted alone.
+General principles:
 
----
+- Authentication determines identity.
+- Authorization determines permissions.
+- Permission checks occur on the server.
+- Client-side state never grants additional privileges.
 
-## 7. Synchronization Strategy
-
-After write actions:
-
-1. Validate and commit to DB.
-2. Invalidate Redis if needed.
-3. Trigger Next.js revalidation.
-4. UI re-renders with fresh server state.
-
-No manual client-side state merging.
+Client state may improve the user experience but is never considered authoritative.
 
 ---
 
-## 8. Data Consistency Principles
+# 8. Synchronization Strategy
+
+Whenever business data changes:
+
+1. Validate the request.
+2. Apply business rules.
+3. Persist changes.
+4. Refresh affected server-managed data.
+5. Return the updated state to the client.
+
+Synchronization should always favor correctness over minimizing network requests.
+
+---
+
+# 9. Data Consistency Principles
+
+The following principles apply throughout the application:
 
 - MongoDB is the single source of truth.
-- Redis is an optimization layer only.
-- Client state never overrides server state.
-- All business invariants enforced server-side.
+- Client state never overrides server-managed business state.
+- Business invariants are enforced on the server.
+- Server-managed state always takes precedence over cached or client-managed state.
+- Consistency is prioritized over temporary UI responsiveness.
 
 ---
 
@@ -165,7 +187,9 @@ No manual client-side state merging.
 
 This phase is complete when:
 
-- Server vs client state ownership is clear.
-- Cache invalidation strategy is defined.
-- Write synchronization approach is explicit.
-- Optimistic UI boundaries are documented.
+- State ownership is clearly defined.
+- Read and write strategies are documented.
+- Business state consistency rules are established.
+- Protected state access is understood.
+- Synchronization strategy is defined.
+- Deferred state management decisions are explicitly documented.

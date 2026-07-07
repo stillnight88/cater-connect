@@ -1,213 +1,272 @@
 # Phase 10 — API & Data Contracts
 
-> Purpose: Define stable communication contracts between frontend and backend before implementation.
+> **Purpose:** Define stable communication contracts between the client and server before implementation. This phase establishes how different parts of the system communicate without documenting implementation-specific endpoints.
+
+The focus of this phase is **communication consistency**, not individual API routes.
 
 ---
 
-## 1. Global Response Structure
+# 1. API Design Principles
 
-All API responses follow this structure:
+Every API should follow these principles:
 
-### Success (2xx)
+- Consistent request and response formats
+- Predictable HTTP status codes
+- Clear separation between authentication and business operations
+- Stateless request handling
+- Explicit validation of all external input
+- Stable contracts that minimize breaking changes
 
+The API contract should remain stable even if internal implementation changes.
+
+---
+
+# 2. Global Response Contract
+
+All APIs should follow a consistent response structure.
+
+## Success Response (2xx)
+
+```json
 {
-  success: true,
-  data: <payload>,
-  error: null
+  "success": true,
+  "data": {},
+  "error": null
 }
+```
 
-### Error (4xx / 5xx)
+---
 
+## Error Response (4xx / 5xx)
+
+```json
 {
-  success: false,
-  data: null,
-  error: {
-    code: string,
-    message: string,
-    details?: object
+  "success": false,
+  "data": null,
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Human readable message",
+    "details": {}
   }
 }
+```
+
+Benefits:
+
+- Predictable frontend handling.
+- Consistent error processing.
+- Easier API maintenance.
 
 ---
 
-## 2. HTTP Status Code Strategy
+# 3. HTTP Status Code Strategy
 
-- 200 → Successful read
-- 201 → Resource created
-- 400 → Validation error
-- 401 → Not authenticated
-- 403 → Not authorized
-- 404 → Resource not found
-- 409 → Conflict (duplicate review, invalid state transition)
-- 500 → Unexpected server error
+| Status | Meaning |
+|---------|---------|
+| 200 | Successful request |
+| 201 | Resource created |
+| 204 | Successful request with no response body |
+| 400 | Validation failure |
+| 401 | Authentication required or invalid session |
+| 403 | Permission denied |
+| 404 | Resource not found |
+| 409 | Business conflict (duplicate application, invalid state transition, duplicate review, etc.) |
+| 422 | Business rule validation failure (when applicable) |
+| 429 | Rate limit exceeded |
+| 500 | Unexpected server error |
 
-Frontend must handle status codes explicitly.
-
----
-
-## 3. Data Conventions
-
-- All IDs are strings.
-- All timestamps use ISO 8601 format.
-- Dates are stored and returned in UTC.
-- Numeric ratings are integers (1–5).
+The frontend should respond to status codes rather than relying solely on response messages.
 
 ---
 
-## 4. Discover Caterers
+# 4. Data Conventions
 
-GET /api/caterers?location={city}&page={n}&limit={n}
+All APIs should follow consistent data conventions.
 
-Auth: Not Required
+## Identifiers
 
-Returns:
-
-{
-  caterers: [
-    {
-      id,
-      name,
-      rating,
-      location
-    }
-  ],
-  pagination: {
-    page,
-    limit,
-    total
-  }
-}
-
-Cacheable: Yes (read-heavy endpoint)
+- IDs are represented as strings.
 
 ---
 
-## 5. View Service Details & Reviews
+## Dates & Time
 
-GET /api/services/{serviceId}
-
-Auth: Not Required
-
-Returns:
-
-{
-  service: {
-    id,
-    name,
-    description,
-    price
-  },
-  reviews: [
-    {
-      id,
-      userName,
-      rating,
-      comment,
-      createdAt
-    }
-  ]
-}
-
-Cacheable: Yes (invalidate after review creation)
+- Stored in UTC.
+- Returned in ISO 8601 format.
 
 ---
 
-## 6. Create Booking
+## Boolean Values
 
-POST /api/bookings
+Use explicit booleans.
 
-Auth: Required
+Examples:
 
-Request Body:
-
-{
-  serviceId,
-  eventDate,
-  notes?
-}
-
-Validation Rules:
-
-- serviceId must exist
-- eventDate must be future date
-- user must be authenticated
-
-Returns (201):
-
-{
-  bookingId,
-  status,
-  createdAt
-}
+- `emailVerified`
+- `mfaEnabled`
+- `isActive`
 
 ---
 
-## 7. Get Booking Status
+## Enumerations
 
-GET /api/bookings/{bookingId}
+Business state should use explicit enumerated values instead of free-form strings.
 
-Auth: Required (Owner Only)
+Examples:
 
-Returns:
-
-{
-  bookingId,
-  status,
-  lastUpdated
-}
+- User roles
+- Vendor application status
+- Booking status
+- Audit actions
 
 ---
 
-## 8. Create Review
+# 5. Authentication Contract
 
-POST /api/reviews
+Authentication is handled consistently across protected APIs.
 
-Auth: Required
+General expectations:
 
-Preconditions:
+- Public APIs require no authentication.
+- Protected APIs require a valid authenticated session.
+- Authorization is evaluated after authentication.
+- User identity is resolved server-side.
+- Client-provided roles or permissions are never trusted.
 
-- Booking exists
-- Booking belongs to user
-- Booking status = "completed"
-- No existing review
-
-Request Body:
-
-{
-  bookingId,
-  rating (1–5),
-  comment
-}
-
-Returns (201):
-
-{
-  reviewId,
-  createdAt
-}
-
-On duplicate review:
-
-Status: 409 Conflict
+Authentication implementation details belong to the authentication architecture, not individual APIs.
 
 ---
 
-## 9. Authentication (Auth.js)
+# 6. API Categories
 
-Endpoint: /api/auth/*
+The system exposes APIs grouped by business capability rather than by implementation details.
 
-Session Contains:
+## Authentication APIs
 
-{
-  userId,
-  email,
-  role
-}
+Responsibilities:
 
-Role values:
-- customer
-- caterer
-- admin
+- User registration
+- Email verification
+- Login
+- Session refresh
+- Logout
+- Password reset
+- Current user retrieval
+
+---
+
+## Vendor Management APIs
+
+Responsibilities:
+
+- Vendor application submission
+- Vendor application review
+- Vendor approval
+- Vendor rejection
+- Vendor profile management
+
+---
+
+## Service Management APIs
+
+Responsibilities:
+
+- Service creation
+- Service updates
+- Service retrieval
+- Service availability
+
+---
+
+## Booking APIs
+
+Responsibilities:
+
+- Booking creation
+- Booking retrieval
+- Booking lifecycle management
+
+---
+
+## Review APIs
+
+Responsibilities:
+
+- Review creation
+- Review retrieval
+- Rating management
+
+---
+
+## Admin APIs
+
+Responsibilities:
+
+- Vendor application administration
+- Audit log access
+- Administrative operations
+
+The exact endpoint structure may evolve as the project grows without changing these business capabilities.
+
+---
+
+# 7. Validation Contract
+
+Every external input should be validated before reaching business logic.
+
+Validation principles:
+
+- Client-side validation improves user experience.
+- Server-side validation is mandatory.
+- Validation rules should be reusable.
+- Business logic should receive already-validated input.
+
+Validation should produce consistent error responses regardless of the endpoint.
+
+---
+
+# 8. Error Contract
+
+Errors should be predictable and machine-readable.
+
+Every error should provide:
+
+- A stable error code.
+- A human-readable message.
+- Optional validation or debugging details when appropriate.
+
+Unexpected internal errors should never expose sensitive implementation details.
+
+---
+
+# 9. API Versioning Strategy
+
+The current API is treated as **Version 1**.
+
+General principles:
+
+- Breaking changes should introduce a new API version.
+- Existing clients should continue functioning whenever practical.
+- Minor enhancements should remain backward compatible.
+
+Versioning strategy exists to support future evolution without disrupting existing integrations.
+
+---
+
+# 10. Contract Stability
+
+Implementation details may evolve over time.
+
+Examples:
+
+- Route organization
+- Internal services
+- Database queries
+- Business module structure
+
+However, communication contracts should remain stable whenever possible.
+
+Stable contracts reduce frontend changes, simplify maintenance, and improve long-term reliability.
 
 ---
 
@@ -215,8 +274,11 @@ Role values:
 
 This phase is complete when:
 
-- All endpoints are defined.
-- HTTP status behavior is clear.
-- Data conventions are standardized.
-- Validation expectations are documented.
-- Caching behavior is acknowledged.
+- API communication principles are clearly defined.
+- Response structures are standardized.
+- HTTP status behavior is documented.
+- Data conventions are consistent.
+- Authentication expectations are established.
+- Business API categories are identified.
+- Validation and error contracts are standardized.
+- Versioning strategy is documented.
