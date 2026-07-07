@@ -1,127 +1,239 @@
-# Phase 7 — Risks & Unknowns
+# Phase 7 — Risk Assessment & Mitigation
 
-> Purpose: Identify technical, product, architectural, and operational risks before implementation begins.
-
----
-
-## 1. Technical Risks
-
-- Incorrect use of Next.js App Router patterns
-- Mixing Server Components, Server Actions, and API Routes inconsistently
-- Implementing secure authentication and session handling
-- Protecting private routes and server actions
-- Deployment issues on Render (cold starts, SSR behavior)
-- Caching inconsistencies between Redis and MongoDB
+> **Purpose:** Identify realistic project risks, assess their potential impact, and define mitigation strategies before and during implementation. This phase focuses on risks that could affect product quality, security, maintainability, and successful project completion.
 
 ---
 
-## 2. Data Integrity Risks
+# 1. Technical Risks
 
-- Invalid booking status transitions
-- Duplicate reviews for a single booking
-- Race conditions during status updates
-- Stale cache serving outdated booking or service data
-- Orphaned records due to improper deletion
+## Risk
 
-Mitigation:
-- Enforce backend invariants strictly
-- Centralize lifecycle management logic
-- Use atomic database operations when necessary
+Incorrect use of modern Next.js features and application architecture.
 
----
+Examples:
 
-## 3. Abuse & Security Risks
+- Mixing Server Components, Client Components, Server Actions, and Route Handlers inconsistently.
+- Poor separation between application layers.
+- Framework-specific anti-patterns.
+- Deployment behavior differing between development and production.
 
-- Fake or automated booking submissions
-- Spam review attempts
-- Brute-force authentication attempts
-- Rate limiting misconfiguration
-- Session misuse or privilege escalation
+### Mitigation
 
-Mitigation:
-- Rate limiting on critical routes
-- Strict authorization checks
-- Logging suspicious behavior
-- Review creation tied strictly to completed bookings
+- Follow the responsibility boundaries defined in Phase 6.
+- Keep business logic independent of framework-specific features.
+- Validate major architectural decisions through implementation before standardizing them.
 
 ---
 
-## 4. Architectural Drift Risks
+# 2. Security Risks
 
-- Business logic spreading into UI files
-- Mixing multiple backend patterns inconsistently
-- Duplicate validation logic
-- Caching logic leaking into UI layer
+## Authentication & Session Management
 
-Mitigation:
-- Enforce Phase 6 boundary rules
-- Centralize domain logic in dedicated modules
-- Regular refactor review after Phase 2
+Potential risks:
 
----
+- Refresh token theft or misuse.
+- Invalid session restoration.
+- Expired or invalid OTP handling.
+- Session invalidation failures.
+- Token rotation mistakes.
 
-## 5. Identity Model Risk
+### Mitigation
 
-Open Decision:
-- Whether Customer and Caterer share a unified User model or separate models.
-
-Impact:
-- Affects schema design
-- Affects authorization checks
-- Affects future admin and role management
-
-This must be finalized before schema implementation.
+- Use short-lived access tokens.
+- Rotate refresh tokens.
+- Store refresh tokens securely.
+- Enforce OTP expiration.
+- Invalidate sessions on logout and credential changes.
 
 ---
 
-## 6. Product Risks
+## Authorization
 
-- Low initial caterer participation
-- Low user trust at early stage
-- Users abandoning bookings
-- Incomplete or outdated service listings
+Potential risks:
 
-Mitigation:
-- Keep local scope small
-- Emphasize verified review model
-- Keep MVP narrow and reliable
+- Privilege escalation.
+- Missing ownership validation.
+- Unauthorized resource access.
+- Incorrect role checks.
 
----
+### Mitigation
 
-## 7. Learning Risks
-
-- Debugging SSR behavior
-- Understanding caching in Next.js
-- Managing environment variables securely
-- Migrating auth strategy if needed
+- Perform authorization checks on every protected operation.
+- Never trust client-provided roles or identifiers.
+- Centralize authorization logic.
 
 ---
 
-## 8. Overengineering Risk
+## Abuse Protection
 
-Given learning goals and small scale:
+Potential risks:
 
-Risk:
-- Adding unnecessary abstractions
-- Overusing infrastructure
-- Designing for scale beyond current need
+- Brute-force authentication attempts.
+- Automated vendor applications.
+- Spam review submissions.
+- API abuse.
 
-Mitigation:
-- Follow constraints defined in Phase 2
-- Optimize only after working baseline exists
+### Mitigation
+
+- Apply rate limiting.
+- Validate ownership.
+- Require verified bookings before reviews.
+- Log suspicious activities.
 
 ---
 
-## 9. Validation / Spikes Required
+# 3. Business Risks
 
-Before full implementation:
+## Vendor Onboarding
 
-- Build minimal authentication prototype
-- Test booking lifecycle in isolation
-- Deploy early to Render
-- Validate Redis caching behavior
-- Test rate limiting integration
-- Confirm identity model decision
+Potential risks:
+
+- Duplicate vendor applications.
+- Multiple approvals of the same application.
+- Vendor Profile creation failures.
+- Inconsistent role updates.
+
+### Mitigation
+
+- Enforce one pending application per user.
+- Allow application review only once.
+- Perform approval operations atomically.
+- Record approval actions through audit logging.
+
+---
+
+## Booking Lifecycle
+
+Potential risks:
+
+- Invalid booking state transitions.
+- Unauthorized booking updates.
+- Business rule violations.
+
+### Mitigation
+
+- Centralize lifecycle management.
+- Restrict state transitions.
+- Validate ownership before updates.
+
+---
+
+## Review Integrity
+
+Potential risks:
+
+- Duplicate reviews.
+- Reviews without completed bookings.
+- Fake reputation building.
+
+### Mitigation
+
+- Allow one review per completed booking.
+- Validate booking ownership.
+- Restrict review creation through backend rules.
+
+---
+
+# 4. Data Integrity Risks
+
+Potential risks:
+
+- Race conditions.
+- Duplicate records.
+- Orphaned relationships.
+- Stale cached data.
+- Inconsistent updates across related entities.
+
+### Mitigation
+
+- Use atomic database operations where appropriate.
+- Enforce business invariants.
+- Design indexes carefully.
+- Maintain data consistency across related entities.
+
+---
+
+# 5. Operational Risks
+
+Potential risks:
+
+- Environment configuration mistakes.
+- Background job failures.
+- Email delivery failures.
+- Deployment configuration issues.
+- Missing monitoring during production.
+
+### Mitigation
+
+- Separate environment configurations.
+- Retry failed background jobs safely.
+- Monitor critical infrastructure.
+- Validate deployment configuration before release.
+
+---
+
+# 6. Architectural Risks
+
+Potential risks:
+
+- Business logic leaking into presentation code.
+- Tight coupling between application layers.
+- Duplicate validation logic.
+- Mixing infrastructure concerns with business logic.
+- Unclear ownership of responsibilities.
+
+### Mitigation
+
+- Follow Phase 6 responsibility boundaries.
+- Keep responsibilities isolated.
+- Regularly review architecture during development.
+- Refactor when architectural drift is detected.
+
+---
+
+# 7. Overengineering Risks
+
+Potential risks:
+
+- Designing for scale far beyond current needs.
+- Introducing unnecessary abstractions.
+- Adding infrastructure without clear value.
+- Building features before they are required.
+
+### Mitigation
+
+- Prioritize a working product over theoretical scalability.
+- Introduce complexity only when justified.
+- Keep the architecture simple and maintainable.
+
+---
+
+# 8. Resolved Decisions
+
+The following implementation risks have already been resolved during development:
+
+| Decision | Status |
+|----------|--------|
+| Unified User identity model | Resolved |
+| Role-based access control strategy | Resolved |
+| Authentication approach | Resolved |
+| Vendor onboarding workflow | Resolved |
+| Audit logging strategy | Resolved |
+
+Future planning should build upon these decisions rather than reopening them without a strong architectural reason.
+
+---
+
+# 9. Future Validation Areas
+
+The following areas should continue to be validated as the project grows:
+
+- Redis caching strategy under increased usage.
+- Background job reliability and retry behavior.
+- Database indexing effectiveness.
+- API performance under realistic workloads.
+- Monitoring and observability.
+- Deployment configuration and recovery procedures.
 
 ---
 
@@ -129,7 +241,8 @@ Before full implementation:
 
 This phase is complete when:
 
-- All major risk categories are visible.
-- Unknown architectural decisions are documented.
-- Mitigation strategies are defined.
-- Validation experiments are planned.
+- Major technical, security, business, data, operational, and architectural risks have been identified.
+- Every significant risk has an appropriate mitigation strategy.
+- Previously resolved architectural decisions are documented.
+- Remaining validation areas are clearly identified.
+- The project can proceed with a clear understanding of its primary risks.

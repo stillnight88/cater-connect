@@ -1,94 +1,156 @@
 # Phase 6 — Responsibility Boundaries
 
-> Purpose: Define strict ownership between UI, server logic, and data to prevent architectural drift.
+> Purpose: Clearly define ownership across application layers so every responsibility has one place to live, preventing duplicated logic and architectural drift as the project grows.
 
 ---
 
-## 1. Frontend Responsibilities (Client-Side)
+## 1. Presentation Layer Responsibilities (Client)
 
-The frontend is responsible for:
+The Presentation Layer is responsible for user interaction and application presentation.
 
-- Rendering UI components
+Responsibilities:
+
+- Rendering user interfaces
 - Collecting user input
 - Managing local UI state
-- Performing basic input validation (format, empty fields)
-- Handling loading and error states
-- Triggering server actions or API calls
+- Performing client-side validation for user experience
+- Displaying loading, success, and error states
+- Calling Server Actions or API Routes
+- Presenting data returned by the server
 
-The frontend is NOT responsible for:
+The Presentation Layer is **not** responsible for:
+
+- Business rules
+- Authorization
+- Authentication decisions
+- Data persistence
+- Trusting client-provided data
+
+---
+
+## 2. Server Entry Layer Responsibilities
+
+The Server Entry Layer receives requests from the client and coordinates the application's server-side execution.
+
+Responsibilities:
+
+- Receiving API requests or Server Action calls
+- Authenticating requests
+- Authorizing access
+- Validating incoming data
+- Delegating work to the Business Layer
+- Returning consistent responses
+
+The Server Entry Layer is **not** responsible for:
+
+- Implementing business rules
+- Directly managing application workflows
+- Containing complex business decisions
+
+---
+
+## 3. Business Layer Responsibilities
+
+The Business Layer contains the application's core business logic.
+
+Responsibilities:
 
 - Enforcing business rules
-- Determining booking status
-- Authorizing access
-- Trusting user identity from client state
+- Managing business workflows
+- Applying lifecycle transitions
+- Enforcing ownership rules
+- Coordinating operations across multiple entities
+- Maintaining business invariants
+
+The Business Layer acts as the application's single source of truth for business behavior.
+
+The Business Layer is **not** responsible for:
+
+- Rendering UI
+- Managing HTTP requests
+- Database-specific implementation details
 
 ---
 
-## 2. Server Responsibilities (Business Logic Layer)
+## 4. Infrastructure Layer Responsibilities
 
-The server layer is responsible for:
+The Infrastructure Layer provides technical capabilities used by the application.
 
-- Authentication and session validation
-- Authorization (ownership and role checks)
-- Enforcing business invariants
-- Validating all write operations
-- Managing booking lifecycle transitions
-- Coordinating database and cache interactions
+Responsibilities:
 
-The server acts as the single source of truth.
+- Database connectivity
+- Redis connectivity
+- Background job processing
+- Email delivery
+- External service integrations
+- Configuration management
 
----
-
-## 3. Data Layer Responsibilities
-
-The data layer is responsible for:
-
-- Persistence in MongoDB
-- Indexing and query optimization
-- Returning structured data
-- Never containing business logic
-
-Redis is treated as infrastructure:
-- Used only for caching or rate limiting
-- Never treated as permanent storage
+Infrastructure supports the application but does not define business behavior.
 
 ---
 
-## 4. Next.js-Specific Boundary Rules
+## 5. Data Layer Responsibilities
 
-Because this project uses Next.js App Router:
+The Data Layer is responsible for persistence.
 
-- Server Components may fetch data but must not contain business rule logic.
-- Server Actions may validate input but must delegate core business rules to shared logic modules.
-- API Routes handle complex operations and reusable endpoints.
-- Client Components never access database or Redis directly.
+Responsibilities:
 
-All business logic must live in domain modules (e.g., /lib/domain).
+- Database models
+- Data persistence
+- Query execution
+- Indexing strategy
+- Data retrieval
 
----
+The Data Layer is **not** responsible for:
 
-## 5. Forbidden Patterns
-
-The following are strictly disallowed:
-
-- Business logic inside React components
-- Direct database calls inside UI files
-- Trusting client-provided user IDs
-- Allowing client-side status transitions
-- Duplicating validation logic across layers
-- Embedding caching logic in UI components
+- Business validation
+- Authorization
+- Workflow decisions
 
 ---
 
-## 6. Boundary Enforcement Principle
+## 6. Cross-Cutting Responsibilities
 
-Every new feature must answer:
+Some responsibilities span multiple layers while still having clearly defined ownership.
 
-- Does this belong in UI?
-- Does this belong in business logic?
-- Does this belong in data infrastructure?
+| Concern | Primary Owner |
+|----------|---------------|
+| Rendering | Presentation Layer |
+| Authentication | Server Entry Layer |
+| Authorization | Server Entry Layer |
+| Input Validation | Client (UX) + Server (Security) |
+| Business Rules | Business Layer |
+| Data Persistence | Data Layer |
+| Infrastructure Services | Infrastructure Layer |
+| Error Handling | All Layers (within their responsibilities) |
+| Logging & Monitoring | Infrastructure Layer |
 
-If unclear, default to server layer.
+---
+
+## 7. Forbidden Patterns
+
+The following practices are intentionally prohibited:
+
+- Business logic inside UI components
+- Direct database access from the Presentation Layer
+- Trusting client-provided identifiers or permissions
+- Client-controlled business state transitions
+- Duplicating business rules across multiple layers
+- Embedding infrastructure concerns inside UI components
+- Mixing business logic with persistence logic
+
+---
+
+## 8. Boundary Enforcement Principles
+
+Every new feature should answer the following questions before implementation:
+
+- Which layer owns this responsibility?
+- Is this business behavior or presentation behavior?
+- Can this responsibility exist in only one place?
+- Would moving this responsibility to another layer create duplication or tighter coupling?
+
+When responsibility is unclear, prefer keeping business decisions inside the **Business Layer**, while allowing other layers to focus on their own concerns.
 
 ---
 
@@ -96,7 +158,8 @@ If unclear, default to server layer.
 
 This phase is complete when:
 
-- Frontend, server, and data responsibilities are explicit.
-- Business logic location is clearly defined.
-- Forbidden shortcuts are documented.
-- Next.js-specific risks are addressed.
+- Every major responsibility has a clearly defined owner.
+- Layer boundaries are explicit.
+- Business logic has a single authoritative location.
+- Cross-cutting responsibilities are understood.
+- Architectural shortcuts and duplication risks are documented.
