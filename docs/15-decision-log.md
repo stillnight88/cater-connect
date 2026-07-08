@@ -1,197 +1,527 @@
 # Phase 15 — Decision Log
 
-> Purpose: Record architectural decisions, context, and trade-offs to prevent future confusion.
+> **Purpose:** Maintain a historical record of significant architectural, business, technical, and process decisions made throughout the project.
+>
+> This document records **why the project evolved into its current design**, not every implementation change.
 
 ---
 
-## Decision 1 — Use Next.js (App Router)
+# 1. Decision Recording Principles
 
-Context:
-Learning-first project with full-stack intent.
+A decision should be recorded only if it significantly affects one or more of the following:
 
-Chosen:
-Next.js (App Router)
+- System Architecture
+- Business Rules
+- Security Model
+- Data Model
+- Technology Stack
+- Infrastructure
+- Development Process
 
-Why:
-- Unified full-stack framework.
-- Encourages server-first architecture.
-- Modern industry alignment (2026 standards).
-
-Rejected:
-- React + Express (split deployment, more infrastructure overhead).
-- Other frameworks not aligned with current expertise.
-
-Trade-offs:
-- Increased architectural complexity.
-- Risk of mixing server and client logic.
-
-Status:
-Closed.
+Routine implementation details, bug fixes, refactoring, dependency upgrades, and configuration changes should **not** be recorded.
 
 ---
 
-## Decision 2 — Adopt Layered Architecture (UI → Domain → Infrastructure)
+# 2. Decision Status
 
-Context:
-Prevent architectural drift in hybrid Next.js environment.
-
-Why:
-- Clear separation of responsibilities.
-- Centralized business logic.
-- Easier refactoring and testing.
-
-Rejected:
-- Logic inside components.
-- Flat utility-based structure.
-
-Trade-offs:
-- Requires discipline.
-- Slightly more boilerplate.
-
-Status:
-Closed.
+| Status | Meaning |
+|---------|---------|
+| Active | Current project decision. |
+| Deferred | Intentionally postponed for future review. |
+| Superseded | Replaced by a newer decision but retained for historical context. |
+| Rejected | Considered but intentionally not adopted. |
 
 ---
 
-## Decision 3 — Hybrid Backend Pattern (Server Actions + API Routes)
+# 3. Decision Categories
 
-Context:
-Next.js App Router environment.
-
-Why:
-- Server Actions for form-driven flows.
-- API Routes for reusable and complex endpoints.
-- Shared domain logic to avoid duplication.
-
-Risk:
-- Pattern inconsistency if discipline not enforced.
-
-Mitigation:
-- Domain logic centralized in /lib/domain.
-
-Status:
-Closed.
+| Prefix | Category |
+|---------|----------|
+| ARCH | Architecture |
+| TECH | Technology |
+| AUTH | Authentication & Security |
+| DATA | Data & Domain |
+| BUS | Business Rules |
+| PROC | Development Process |
 
 ---
 
-## Decision 4 — Use MongoDB as Primary Database
+# 4. Decision Index
 
-Context:
-Learning-first + small-scale project.
-
-Why:
-- Familiarity reduces cognitive overhead.
-- Flexible schema for iterative modeling.
-
-Rejected:
-- PostgreSQL (stronger relational enforcement but higher modeling cost).
-- Firebase (vendor lock-in, different paradigm).
-
-Trade-offs:
-- Weaker relational guarantees.
-- Application-level invariant enforcement required.
-
-Status:
-Closed.
-
----
-
-## Decision 5 — Use Auth.js (formerly NextAuth)
-
-Context:
-Avoid implementing custom auth prematurely.
-
-Why:
-- Reduces early security risk.
-- Integrated with Next.js.
-- Supports session-based auth.
-
-Trade-offs:
-- Less low-level control.
-- Migration complexity if switching later.
-
-Status:
-Closed.
+| ID | Decision | Status |
+|----|----------|--------|
+| TECH-001 | Next.js App Router | Active |
+| ARCH-001 | Layered Architecture | Active |
+| TECH-002 | MongoDB + Mongoose | Active |
+| AUTH-001 | Auth.js Authentication | Superseded |
+| AUTH-002 | Custom JWT Authentication | Active |
+| DATA-001 | Identity Model (Open Decision) | Superseded |
+| DATA-002 | Unified User Identity Model | Active |
+| BUS-001 | Vendor Onboarding Design (Open Decision) | Superseded |
+| BUS-002 | Admin Approval Workflow | Active |
+| AUTH-003 | Role-Based Access Control (RBAC) | Active |
+| TECH-003 | Redis Infrastructure | Active |
+| TECH-004 | BullMQ Background Jobs | Active |
+| TECH-005 | Resend Email Service | Active |
+| TECH-006 | Validation Strategy (Zod) | Active |
+| TECH-007 | Deployment Platform (Vercel) | Active |
+| TECH-008 | Redis Caching Strategy | Deferred |
+| PROC-001 | Phase-Based Development Workflow | Active |
 
 ---
 
-## Decision 6 — Use Redis for Caching and Rate Limiting
-
-Context:
-Existing Redis rate limiter project available.
-
-Why:
-- Improve read performance.
-- Integrate rate limiting without new infrastructure.
-- Learn infrastructure layering.
-
-Rejected:
-- No caching.
-- External rate limiting service.
-
-Trade-offs:
-- Added operational complexity.
-- Cache invalidation risk.
-
-Important:
-Redis is not a source of truth.
-
-Status:
-Closed.
+# 5. Decision Records
 
 ---
 
-## Decision 7 — Identity Model (Unified User with Roles)
+## TECH-001 — Next.js App Router
 
-Context:
-Need to model Customer and Caterer roles.
+**Status**
 
-Chosen:
-Single User model with role field.
+Active
 
-Why:
-- Simplifies authentication.
-- Avoids duplication.
-- Enables future extensibility (admin role).
+**Decision**
 
-Trade-offs:
-- Requires careful authorization checks.
+Use Next.js App Router as the application's full-stack framework.
 
-Status:
-Closed.
+**Reason**
 
----
+Provides modern React architecture, integrated backend capabilities, and aligns with the project's learning goals.
 
-## Decision 8 — Global API Response Format
+**Related Phases**
 
-Context:
-Ensure predictable frontend handling.
-
-Why:
-- Consistent error management.
-- Simplifies client logic.
-- Easier debugging.
-
-Trade-offs:
-- Slight boilerplate overhead.
-
-Status:
-Closed.
+- Phase 8
+- Phase 9
 
 ---
 
-## Decision 9 — Phase-Based Development Strategy
+## ARCH-001 — Layered Architecture
 
-Context:
-Prevent burnout and scope creep.
+**Status**
 
-Why:
-- Deliver vertical slice first.
-- Stabilize before optimizing.
-- Control execution risk.
+Active
 
-Trade-offs:
-- Requires discipline to stop adding features.
+**Decision**
 
-Status:
-Closed.
+Adopt a layered architecture consisting of:
+
+- Presentation
+- Server Entry
+- Business
+- Infrastructure
+- Data
+
+**Reason**
+
+Improves maintainability, separation of responsibilities, and long-term scalability.
+
+**Related Phases**
+
+- Phase 6
+- Phase 9
+
+---
+
+## TECH-002 — MongoDB + Mongoose
+
+**Status**
+
+Active
+
+**Decision**
+
+Use MongoDB with Mongoose as the primary persistence layer.
+
+**Reason**
+
+Supports iterative development while matching project complexity and learning goals.
+
+**Related Phases**
+
+- Phase 8
+
+---
+
+## AUTH-001 — Auth.js Authentication
+
+**Status**
+
+Superseded
+
+**Original Decision**
+
+Use Auth.js for authentication.
+
+**Reason for Replacement**
+
+Project goals shifted toward learning authentication internals through a custom implementation.
+
+**Superseded By**
+
+AUTH-002
+
+---
+
+## AUTH-002 — Custom JWT Authentication
+
+**Status**
+
+Active
+
+**Decision**
+
+Implement authentication using:
+
+- JWT
+- Refresh Tokens
+- OTP Verification
+- RBAC
+
+**Reason**
+
+Provides complete architectural control while supporting the project's learning objectives.
+
+**Related Phases**
+
+- Phase 8
+- Phase 10
+- Phase 12
+
+---
+
+## DATA-001 — Identity Model (Open Decision)
+
+**Status**
+
+Superseded
+
+**Original Decision**
+
+Identity model intentionally left open during planning.
+
+**Alternatives Considered**
+
+- Separate Customer and Vendor models
+- Unified User model
+
+**Reason for Replacement**
+
+Implementation showed a unified identity model better supported authentication and authorization.
+
+**Superseded By**
+
+DATA-002
+
+---
+
+## DATA-002 — Unified User Identity Model
+
+**Status**
+
+Active
+
+**Decision**
+
+Use a single User model with role-based behavior.
+
+Roles:
+
+- customer
+- vendor
+- admin
+
+**Reason**
+
+Simplifies identity management while supporting future expansion.
+
+**Related Phases**
+
+- Phase 2
+- Phase 8
+
+---
+
+## BUS-001 — Vendor Onboarding Design (Open Decision)
+
+**Status**
+
+Superseded
+
+**Original Decision**
+
+Vendor onboarding workflow intentionally left open during planning.
+
+**Reason for Replacement**
+
+Business rules became clearer during implementation.
+
+**Superseded By**
+
+BUS-002
+
+---
+
+## BUS-002 — Admin Approval Workflow
+
+**Status**
+
+Active
+
+**Decision**
+
+Users become vendors through an administrator-approved Vendor Application workflow.
+
+Workflow:
+
+Customer
+
+↓
+
+Vendor Application
+
+↓
+
+Admin Review
+
+↓
+
+Approved / Rejected
+
+↓
+
+Vendor Profile
+
+**Reason**
+
+Separates authentication from business onboarding while improving security and administrative control.
+
+**Related Phases**
+
+- Phase 3
+- Phase 5
+- Phase 7
+
+---
+
+## AUTH-003 — Role-Based Access Control (RBAC)
+
+**Status**
+
+Active
+
+**Decision**
+
+Use role-based authorization for customer, vendor, and administrator permissions.
+
+**Reason**
+
+Centralizes permission management while supporting future roles.
+
+---
+
+## TECH-003 — Redis Infrastructure
+
+**Status**
+
+Active
+
+**Decision**
+
+Use Redis as supporting infrastructure.
+
+**Current Usage**
+
+- BullMQ
+
+**Future Usage**
+
+- Rate Limiting
+- Caching
+
+**Review Required**
+
+When caching strategy is finalized.
+
+---
+
+## TECH-004 — BullMQ Background Jobs
+
+**Status**
+
+Active
+
+**Decision**
+
+Execute long-running tasks outside the request-response lifecycle.
+
+**Current Usage**
+
+- Email processing
+
+---
+
+## TECH-005 — Resend Email Service
+
+**Status**
+
+Active
+
+**Decision**
+
+Use Resend for transactional email delivery.
+
+**Reason**
+
+Simple integration with Next.js while supporting authentication workflows.
+
+---
+
+## TECH-006 — Validation Strategy (Zod)
+
+**Status**
+
+Active
+
+**Decision**
+
+Use Zod as the application's validation library.
+
+**Reason**
+
+Provides runtime validation, strong TypeScript integration, and reusable validation schemas.
+
+**Related Phases**
+
+- Phase 8
+- Phase 10
+
+---
+
+## TECH-007 — Deployment Platform
+
+**Status**
+
+Active
+
+**Decision**
+
+Deploy the application using Vercel.
+
+**Reason**
+
+Provides first-class Next.js support, preview deployments, and a simplified deployment workflow.
+
+---
+
+## TECH-008 — Redis Caching Strategy
+
+**Status**
+
+Deferred
+
+**Decision**
+
+Caching strategy intentionally postponed.
+
+**Current Understanding**
+
+- MongoDB remains the source of truth.
+- Redis caching will be introduced only when justified by performance requirements.
+
+**Review Trigger**
+
+Performance profiling demonstrates a measurable need for caching.
+
+---
+
+## PROC-001 — Phase-Based Development Workflow
+
+**Status**
+
+Active
+
+**Decision**
+
+Develop the project iteratively using the following cycle:
+
+Planning
+
+↓
+
+Implementation
+
+↓
+
+Review
+
+↓
+
+Planning Update
+
+↓
+
+Next Phase
+
+**Reason**
+
+Allows architectural decisions to evolve intentionally while reducing project risk.
+
+**Related Phases**
+
+- Phase 13
+- Phase 14
+
+---
+
+# 6. Deferred Decisions
+
+The following areas remain intentionally undecided:
+
+- Redis caching implementation
+- Monitoring platform
+- Metrics collection strategy
+- CDN strategy
+- Multi-region deployment
+- Disaster recovery planning
+
+These decisions will be finalized only when supported by project requirements.
+
+---
+
+# 7. Superseded Decisions
+
+Historical decisions are retained for future reference.
+
+| Original Decision | Replaced By |
+|-------------------|-------------|
+| Auth.js Authentication | Custom JWT Authentication |
+| Identity Model (Open Decision) | Unified User Identity Model |
+| Vendor Onboarding Design | Admin Approval Workflow |
+
+Historical decisions provide architectural context and should not be deleted.
+
+---
+
+# 8. Decision Review Guidelines
+
+Review an existing decision only when:
+
+- Business requirements significantly change.
+- Security requirements evolve.
+- Architecture no longer supports project growth.
+- Technology limitations become significant.
+- A demonstrably better solution exists.
+
+Technology trends alone are **not** sufficient reason to revisit a decision.
+
+---
+
+## Phase Completion Rule
+
+This phase is complete when:
+
+- Significant project decisions are documented.
+- Active, deferred, and superseded decisions are clearly distinguished.
+- Historical decisions remain traceable.
+- Deferred decisions are intentionally acknowledged.
+- Future architectural reviews have sufficient historical context.
