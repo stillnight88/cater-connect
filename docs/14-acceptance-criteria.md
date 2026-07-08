@@ -1,102 +1,295 @@
-# Phase 14 — Acceptance Criteria
+# Phase 14 — Phase Acceptance Criteria
 
-> Purpose: Define clear, measurable conditions for declaring each phase complete.
+> **Purpose:** Define the objective criteria used to determine whether a development phase is complete and whether the project is ready to proceed to the next phase.
 
----
-
-# Phase 1 — Core Working System
-
-## Functional Completion
-
-- User can register and login successfully.
-- Authenticated user can:
-  - View caterers
-  - View service details
-  - Create a booking
-  - View booking status
-  - Submit one review after booking completion
-- Booking lifecycle transitions function correctly.
-- Review cannot be submitted unless booking is completed.
-- Data persists in MongoDB correctly.
-
-## Security & Access
-
-- Unauthenticated users cannot create bookings.
-- Users cannot access or modify other users’ bookings.
-- Backend validates all write operations.
-- Duplicate review attempts return 409 Conflict.
-
-## Stability
-
-- No unhandled promise rejections.
-- No 500 errors during normal booking flow.
-- No console errors in browser during core journey.
-- Initial deployment to Render works.
-
-## Definition of Done
-
-- Discover → View → Book → Track → Review works end-to-end.
-- Identity model decision finalized.
-- Architecture supports core flow without duplication.
+This phase acts as a **quality gate**, not a feature list. Every development phase should satisfy its acceptance criteria before the next phase begins.
 
 ---
 
-# Phase 2 — Stability & Improvements
+# Acceptance Philosophy
 
-## Functional Enhancements
+A phase is considered complete only when it satisfies **all** of the following:
 
-- Sorting and filtering operate correctly.
-- Booking history accessible to users.
-- Redis caching implemented for read-heavy endpoints.
-- Rate limiting applied to critical write endpoints.
+- Product expectations
+- Architectural expectations
+- Security expectations
+- Quality expectations
+- Documentation expectations
 
-## Architecture Integrity
-
-- No business logic exists inside UI components.
-- All business rules reside in domain modules.
-- No direct database access from client files.
-- Folder structure aligns with Phase 9 architecture.
-
-## Stability & Validation
-
-- Redis invalidation tested after review creation.
-- Rate limiting does not block legitimate usage.
-- No duplicated validation logic across layers.
-
-## Definition of Done
-
-- System operates reliably under small-scale usage.
-- Architecture boundaries are enforced.
+Completing features alone does **not** mean a phase is complete.
 
 ---
 
-# Phase 3 — Production Readiness
+# Phase 1 — Foundation & Authentication
 
-## Deployment
+## Product Acceptance
 
-- Application deployed successfully.
-- Environment variables configured correctly.
-- No sensitive data exposed in responses or logs.
+- Authentication functions correctly.
+- User identity model is finalized.
+- Account lifecycle operates correctly.
+- Email verification and password recovery function correctly.
+- Background infrastructure required for authentication is operational.
 
-## Performance
+---
 
-- Page load times meet Phase 12 targets.
-- Cached endpoints perform within expected thresholds.
-- Database indexes applied to common queries.
+## Architecture Acceptance
 
-## Reliability
+- Responsibility boundaries defined in Phase 6 are respected.
+- Authentication logic remains centralized.
+- Layer responsibilities remain clear.
+- No architectural shortcuts compromise future development.
 
-- Logging implemented for key actions.
-- No critical errors observed in production logs.
-- Error responses follow global API format.
+---
 
-## Documentation
+## Security Acceptance
 
-- README clearly explains setup, architecture, and decisions.
-- Decision log updated with final architectural choices.
+- Protected operations require authentication.
+- Authorization rules function correctly.
+- Sensitive information is protected.
+- Session management behaves consistently.
+- Audit logging is operational for sensitive actions.
 
-## Definition of Done
+---
 
-- System meets defined NFRs.
-- No unresolved critical risks.
-- Scope freeze enforced.
+## Quality Acceptance
+
+- Critical workflows operate without blocking defects.
+- Unexpected failures are handled gracefully.
+- The application remains deployable.
+- Core architectural decisions are considered stable.
+
+---
+
+## Documentation Acceptance
+
+- Planning documents reflect finalized decisions.
+- Architectural decisions are documented.
+- Decision Log is updated where necessary.
+- Project documentation remains accurate.
+
+---
+
+## Phase Decision
+
+☐ Accepted
+
+☐ Rework Required
+
+---
+
+# Phase 2 — Identity & Platform Management
+
+## Product Acceptance
+
+- User roles function correctly.
+- Vendor onboarding workflow is complete.
+- Administrative capabilities function correctly.
+- Platform management supports intended user roles.
+
+---
+
+## Architecture Acceptance
+
+- Business rules remain centralized.
+- Responsibility boundaries remain respected.
+- Administrative functionality integrates without architectural duplication.
+
+---
+
+## Security Acceptance
+
+- RBAC is consistently enforced.
+- Administrative permissions are correctly restricted.
+- Vendor approval operations are protected.
+- Audit records exist for administrative actions.
+
+---
+
+## Quality Acceptance
+
+- Platform workflows behave consistently.
+- Business rules remain maintainable.
+- No critical architectural regressions are introduced.
+
+---
+
+## Documentation Acceptance
+
+- Planning documents reflect platform architecture.
+- Business workflow documentation remains accurate.
+- Decision Log captures significant architectural changes.
+
+---
+
+## Phase Decision
+
+☐ Accepted
+
+☐ Rework Required
+
+---
+
+# Phase 3 — Core Business Features
+
+## Product Acceptance
+
+- Core customer workflows operate successfully.
+- Vendor workflows operate successfully.
+- Booking workflows function correctly.
+- Review system behaves according to business rules.
+- The platform delivers its intended business value.
+
+---
+
+## Architecture Acceptance
+
+- Business domains remain clearly separated.
+- New functionality follows established architecture.
+- Business logic remains independent of presentation.
+
+---
+
+## Security Acceptance
+
+- Ownership validation is consistently enforced.
+- Protected business operations remain secure.
+- Review integrity is preserved.
+
+---
+
+## Quality Acceptance
+
+- Core business workflows operate reliably.
+- No critical business defects remain.
+- Deployment environment supports expected usage.
+
+---
+
+## Documentation Acceptance
+
+- Business documentation reflects implemented workflows.
+- Architecture documentation remains accurate.
+- Planning documents are synchronized with implementation.
+
+---
+
+## Phase Decision
+
+☐ Accepted
+
+☐ Rework Required
+
+---
+
+# Phase 4 — Quality & Production Readiness
+
+## Product Acceptance
+
+- User experience improvements are complete.
+- Intended functionality remains unchanged after refactoring.
+- No regression is introduced by quality improvements.
+
+---
+
+## Architecture Acceptance
+
+- Technical debt has been reduced.
+- Architecture remains maintainable.
+- Codebase organization remains consistent.
+
+---
+
+## Security Acceptance
+
+- Security posture is maintained after optimization.
+- No new vulnerabilities are introduced.
+- Sensitive operations remain protected.
+
+---
+
+## Quality Acceptance
+
+- Performance improvements are validated.
+- Error handling is consistent.
+- Testing confidence has improved.
+- Operational readiness is demonstrated.
+
+---
+
+## Documentation Acceptance
+
+- Technical documentation is complete.
+- Planning documents accurately represent the final architecture.
+- Decision Log reflects major project decisions.
+- Project documentation is ready for long-term maintenance.
+
+---
+
+## Phase Decision
+
+☐ Accepted
+
+☐ Rework Required
+
+---
+
+# Phase Review Checklist
+
+Before beginning the next development phase, confirm the following:
+
+- ☐ Phase objectives have been achieved.
+- ☐ Acceptance criteria have been satisfied.
+- ☐ Critical risks have been reviewed.
+- ☐ Architecture remains valid.
+- ☐ Planning documents have been updated.
+- ☐ Significant decisions have been recorded.
+- ☐ Deferred decisions are acknowledged.
+- ☐ The project is ready to proceed.
+
+---
+
+# Lessons Learned (Optional)
+
+Each completed phase may record:
+
+### Successes
+
+- What worked well?
+
+---
+
+### Challenges
+
+- What created unexpected difficulty?
+
+---
+
+### Architectural Improvements
+
+- What should be improved before the next phase?
+
+---
+
+### Planning Updates
+
+- Which planning documents required revision?
+
+---
+
+### Deferred Decisions
+
+- Which decisions remain intentionally postponed?
+
+Recording lessons learned is encouraged to improve future development phases and maintain project knowledge.
+
+---
+
+## Phase Completion Rule
+
+This phase is complete when:
+
+- Every development phase has objective acceptance criteria.
+- Acceptance is based on measurable evidence rather than feature completion alone.
+- Phase reviews encourage continuous improvement.
+- Documentation remains synchronized with implementation.
+- Progress to the next phase occurs only after formal acceptance.

@@ -1,123 +1,204 @@
 # Phase 12 — Non-Functional Requirements
 
-> Purpose: Define how the system behaves under real-world conditions beyond core functionality.
+> **Purpose:** Define the quality attributes the system must satisfy beyond its core functionality. These requirements describe **how the system should behave**, not **what features it provides**.
 
 ---
 
-## 1. Performance Requirements
+# 1. Performance Requirements
 
-Target expectations (small-scale usage):
+The system should provide a responsive user experience under expected project usage.
 
-- Page loads: ≤ 2 seconds under normal conditions
-- API responses:
-  - Cached reads: ≤ 200ms
-  - Non-cached reads: ≤ 500ms
-- Write operations: ≤ 800ms (acceptable for booking flow)
+General expectations:
 
-Notes:
-- Cold starts on Render are acceptable.
-- Performance optimization is secondary to correctness.
-- Redis is used to reduce load, not guarantee speed.
+- User interactions should feel responsive.
+- Common read operations should complete efficiently.
+- Write operations should prioritize correctness over speed.
+- Performance optimizations should be driven by measurement rather than assumptions.
+
+Guiding Principles:
+
+- Correctness takes priority over raw performance.
+- Avoid premature optimization.
+- Profile before optimizing.
+- Performance targets should evolve based on real-world usage.
 
 ---
 
-## 2. Security Requirements
+# 2. Security Requirements
 
-The system explicitly defends against:
+Security is treated as a fundamental system requirement rather than an optional feature.
 
-- Unauthorized access to bookings and reviews
+The system should protect against:
+
+- Unauthorized access
+- Privilege escalation
+- Duplicate business operations
 - Fake review submissions
-- Duplicate reviews
 - Brute-force authentication attempts
-- Abuse via repeated booking or review requests
+- Automated abuse
+- Unauthorized administrative actions
 
-Security rules:
+Security requirements:
 
-- All write actions require authentication.
-- Authorization checks are enforced server-side.
-- Input validation is mandatory for all write endpoints.
-- Rate limiting is applied to critical routes.
-- Sensitive fields are never returned to the client.
+- Authentication is required for protected operations.
+- Authorization is enforced on every protected server operation.
+- Input validation is mandatory for all external input.
+- Role-based access control (RBAC) governs permissions.
+- OTP verification protects identity verification workflows.
+- Refresh token management must support secure session handling.
+- Administrative actions should generate audit records.
+- Sensitive information must never be exposed to clients.
 
-Out of scope (initially):
+Out of Scope (Current Version):
 
 - Advanced fraud detection
-- DDoS protection beyond basic rate limiting
-- Compliance standards (PCI, GDPR enforcement tooling)
+- Enterprise compliance certifications
+- Enterprise DDoS protection
+- Advanced threat detection systems
 
 ---
 
-## 3. Error Handling Strategy
+# 3. Reliability Requirements
 
-User-facing errors:
+The system should remain reliable even when unexpected failures occur.
 
-- Clear, human-readable messages
-- No internal details exposed
-- Consistent error format
+General principles:
 
-System-facing errors:
+- Business operations should avoid partial updates.
+- Failed background jobs should be retryable where appropriate.
+- Unexpected failures should not corrupt business state.
+- Critical business workflows should remain consistent.
+- Recoverable failures should degrade gracefully.
 
-- Logged with context
-- Stack traces stored server-side only
-- Critical errors flagged for investigation
-
-Retry policy:
-
-- Reads may retry once automatically
-- Writes fail fast to avoid duplicate state changes
+Reliability is prioritized over maximizing throughput.
 
 ---
 
-## 4. Logging & Observability
+# 4. Error Handling Strategy
 
-Log categories:
+Errors should be predictable, consistent, and secure.
+
+## User-Facing Errors
+
+Should provide:
+
+- Clear messages
+- Actionable feedback
+- Consistent formatting
+
+Should never expose:
+
+- Stack traces
+- Database details
+- Internal implementation information
+
+---
+
+## System Errors
+
+Unexpected failures should:
+
+- Be logged with context.
+- Preserve debugging information.
+- Avoid exposing sensitive data.
+
+Retry Principles:
+
+- Safe read operations may be retried when appropriate.
+- Business write operations should avoid automatic retries that could create duplicate state.
+
+---
+
+# 5. Logging & Observability
+
+Logging exists to support monitoring, debugging, and operational visibility.
+
+Important events include:
 
 - Authentication failures
+- Authorization failures
+- Vendor application approvals and rejections
 - Booking lifecycle changes
-- Review creation attempts
+- Review creation
+- Administrative actions
+- Background job failures
 - Unexpected server errors
 
 Logging principles:
 
-- No sensitive data logged
-- Logs differ by environment (dev vs prod)
-- Logs are used for debugging, not analytics
+- Never log sensitive information.
+- Different logging levels should be used for development and production.
+- Logs should support troubleshooting rather than analytics.
 
 ---
 
-## 5. Availability & Degradation Strategy
+# 6. Availability & Graceful Degradation
 
-- MongoDB is the primary dependency.
-- Redis is optional; system must function without it.
-- If Redis is unavailable:
-  - Caching is skipped
-  - Rate limiting falls back to safe defaults
-- Partial degradation is acceptable for non-critical features.
+The application should continue operating whenever possible despite partial infrastructure failures.
+
+General principles:
+
+- MongoDB is the primary persistent data store.
+- Temporary infrastructure failures should affect only dependent features.
+- Core user workflows should remain available whenever practical.
+
+Examples:
+
+- If background job processing is unavailable, email delivery may be delayed.
+- If optional performance optimizations become unavailable, correctness should remain unaffected.
+
+Graceful degradation is preferred over complete service failure.
 
 ---
 
-## 6. Environment & Configuration
+# 7. Environment & Configuration
 
-- Secrets stored in environment variables only.
-- Separate configs for development and production.
-- No credentials committed to repository.
-- Configuration changes do not require code changes.
+Configuration should remain secure, portable, and environment-specific.
+
+Requirements:
+
+- Secrets are stored only in environment variables.
+- No credentials are committed to version control.
+- Development and production environments remain isolated.
+- Configuration changes should not require application code changes.
+- Environment configuration should be validated during application startup.
 
 ---
 
-## 7. Scalability Boundaries
+# 8. Scalability Expectations
 
-The system is designed for:
+The system is currently designed for:
 
-- Local or small-region usage
-- Low to moderate concurrency
-- Single-instance backend
+- Small-to-medium deployments.
+- Low to moderate concurrent usage.
+- Incremental growth as project requirements evolve.
 
-Explicitly not designed for:
+Current priorities:
 
-- High-frequency real-time systems
-- Global multi-region traffic
-- Massive concurrent writes
+- Maintainability
+- Correctness
+- Clear architecture
+
+The architecture should allow future scaling without requiring fundamental redesign.
+
+---
+
+# 9. Deferred Decisions
+
+The following non-functional areas have intentionally not been finalized.
+
+> **Decision Status:** Deferred
+
+Examples include:
+
+- Production monitoring platform
+- Metrics collection strategy
+- Distributed caching strategy
+- CDN strategy
+- Multi-region deployment
+- Disaster recovery procedures
+
+These decisions will be revisited when project scale and operational requirements justify them.
 
 ---
 
@@ -125,7 +206,12 @@ Explicitly not designed for:
 
 This phase is complete when:
 
-- Performance targets are realistic and scoped.
-- Security boundaries are explicit.
-- Failure behavior is documented.
-- Degradation paths are understood.
+- Performance expectations are realistic.
+- Security requirements are clearly defined.
+- Reliability expectations are documented.
+- Error handling behavior is consistent.
+- Logging expectations are established.
+- Availability and degradation strategies are understood.
+- Environment management principles are documented.
+- Scalability expectations are realistic.
+- Deferred operational decisions are explicitly acknowledged.
