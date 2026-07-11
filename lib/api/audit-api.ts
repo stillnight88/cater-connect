@@ -2,6 +2,7 @@ import type { AuditLogPublic, AuditAction } from '@/types/audit';
 import { apiGet, ApiError } from './client';
 
 interface ListAuditLogResponse {
+    success: true;
     entries: AuditLogPublic[];
     pagination: {
         page: number;
@@ -17,5 +18,5 @@ export async function listAuditLogApi(
     action: AuditAction | undefined,
     accessToken: string,
 ): Promise<ListAuditLogResponse | ApiError> {
-    return apiGet<ListAuditLogResponse>('/audit-log', { accessToken, params: { page, limit, action } });
+    return apiGet<ListAuditLogResponse>('api/audit-log', { accessToken, params: { page, limit, action } });
 };

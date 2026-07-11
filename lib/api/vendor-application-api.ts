@@ -3,19 +3,23 @@ import type { RejectVendorApplicationInput } from '@/lib/validation/schemas/vend
 import { apiPost, apiGet, ApiError } from './client';
 
 interface ListVendorApplicationsResponse {
+    success: true;
     applications: VendorApplicationPublic[];
 }
 
 interface GetVendorApplicationResponse {
+    success: true;
     application: VendorApplicationPublic;
 }
 
 interface MutateVendorApplicationResponse {
+    success: true;
     application: VendorApplicationPublic;
 }
 
 interface MyApplicationResponse {
-  application: VendorApplicationPublic | null;
+    success: true;
+    application: VendorApplicationPublic | null;
 }
 
 export async function listVendorApplicationsApi(
