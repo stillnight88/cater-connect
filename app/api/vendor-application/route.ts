@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
 
         const filter = statusParam ? { status: statusParam } : {};
         const applications = await VendorApplicationModel.find(filter)
-            .populate('userID', 'name email')
+            .populate('userId', 'name email')
             .sort({ submittedAt: -1 })
             .lean();
 

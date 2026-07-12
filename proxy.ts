@@ -32,6 +32,7 @@ const PROTECTED_ROUTES = [
     '/api/admin',
     '/api/vendor-application',
     '/api/auth/me', 
+    '/api/audit-log'
 ];
 
 // const ADMIN_ROUTES = [
