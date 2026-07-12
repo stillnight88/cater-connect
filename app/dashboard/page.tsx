@@ -4,8 +4,11 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, LogOut } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 
 import { useAuth, useHasRole } from '@/components/providers/auth-provider';
+import { myApplicationApi, listVendorApplicationsApi } from '@/lib/api/vendor-application-api';
+import type { VendorApplicationPublic } from '@/types/vendor';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,7 +29,7 @@ const ROLE_LABELS: Record<string, string> = {
 
 export default function DashboardPage() {
     const router = useRouter();
-    const { isAuthenticated, isLoading, user, logout } = useAuth();
+    const { isAuthenticated, isLoading, user, logout, getAccessToken } = useAuth();
     const isAdmin = useHasRole('admin');
     const isVendor = useHasRole('vendor');
     const isCustomer = useHasRole('customer');
@@ -36,6 +39,31 @@ export default function DashboardPage() {
             router.replace('/login?redirect=/dashboard');
         }
     }, [isLoading, isAuthenticated, router]);
+
+    const { data: myApplicationResult, isLoading: isApplicationLoading } = useQuery({
+        queryKey: ['vendor-application', 'mine'],
+        queryFn: async () => {
+            const token = await getAccessToken();
+            if (!token) throw new Error('Not authenticated');
+            return myApplicationApi(token);
+        },
+        enabled: isAuthenticated && user?.role === 'customer',
+    });
+
+    const { data: pendingApplicationsResult } = useQuery({
+        queryKey: ['vendor-applications', 'pending'],
+        queryFn: async () => {
+            const token = await getAccessToken();
+            if (!token) throw new Error('Not authenticated');
+            return listVendorApplicationsApi('pending', token);
+        },
+        enabled: isAuthenticated && user?.role === 'admin',
+    });
+
+    const myApplication = myApplicationResult?.success ? myApplicationResult.application : null;
+    const pendingCount = pendingApplicationsResult?.success
+        ? pendingApplicationsResult.applications.length
+        : 0;
 
     async function handleLogout() {
         await logout();
@@ -87,18 +115,10 @@ export default function DashboardPage() {
                     <CardContent>
                         <Separator className="mb-4" />
                         {isCustomer && (
-                            <div className="space-y-3">
-                                <p className="text-sm text-muted-foreground">
-                                    Browse vendors and manage your event bookings
-                                    from here. Want to offer your own catering
-                                    services?
-                                </p>
-                                <Button asChild variant="outline" size="sm">
-                                    <Link href="/vendor/apply">
-                                        Apply to become a vendor
-                                    </Link>
-                                </Button>
-                            </div>
+                            <CustomerDashboardSection
+                                application={myApplication}
+                                isLoading={isApplicationLoading}
+                            />
                         )}
 
                         {isVendor && (
@@ -109,14 +129,110 @@ export default function DashboardPage() {
                         )}
 
                         {isAdmin && (
-                            <p className="text-sm text-muted-foreground">
-                                Review vendor applications and oversee platform
-                                activity from here.
-                            </p>
+                            <AdminDashboardSection pendingCount={pendingCount} />
                         )}
                     </CardContent>
                 </Card>
             </main>
         </div>
     )
+}
+
+function CustomerDashboardSection({
+    application,
+    isLoading,
+}: {
+    application: VendorApplicationPublic | null;
+    isLoading: boolean;
+}) {
+    if (isLoading) {
+        return (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Checking application status…
+            </div>
+        );
+    }
+
+    if (!application) {
+        return (
+            <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                    Browse vendors and manage your event bookings from here.
+                    Want to offer your own catering services?
+                </p>
+                <Button asChild variant="outline" size="sm">
+                    <Link href="/vendor/apply">
+                        Apply to become a vendor
+                    </Link>
+                </Button>
+            </div>
+        );
+    }
+
+    if (application.status === 'pending') {
+        return (
+            <div className="space-y-2">
+                <Badge variant="secondary">Application Pending</Badge>
+                <p className="text-sm text-muted-foreground">
+                    Your vendor application for{' '}
+                    <span className="font-medium">{application.businessName}</span>{' '}
+                    is under review. We&apos;ll email you once a decision is made.
+                </p>
+            </div>
+        );
+    }
+
+    if (application.status === 'approved') {
+        return (
+            <div className="space-y-2">
+                <Badge variant="outline" className="border-green-600 text-green-600">
+                    Vendor Approved
+                </Badge>
+                <p className="text-sm text-muted-foreground">
+                    Your application for{' '}
+                    <span className="font-medium">{application.businessName}</span>{' '}
+                    was approved. Vendor-specific tools are coming in Phase 3.
+                </p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-2">
+            <Badge variant="destructive">Application Rejected</Badge>
+            <p className="text-sm text-muted-foreground">
+                Your application for{' '}
+                <span className="font-medium">{application.businessName}</span>{' '}
+                was not approved.
+                {application.rejectionReason && (
+                    <>
+                        {' '}
+                        Reason: <span className="italic">{application.rejectionReason}</span>
+                    </>
+                )}
+            </p>
+            <Button asChild variant="outline" size="sm">
+                <Link href="/vendor/apply">Apply again</Link>
+            </Button>
+        </div>
+    );
+};
+
+function AdminDashboardSection({ pendingCount }: { pendingCount: number }) {
+    return (
+        <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+                Review vendor applications and oversee platform activity
+                from here.
+            </p>
+            <Button asChild variant="outline" size="sm">
+                <Link href="/admin/vendor-applications">
+                    {pendingCount > 0
+                        ? `Review ${pendingCount} pending application${pendingCount === 1 ? '' : 's'}`
+                        : 'View vendor applications'}
+                </Link>
+            </Button>
+        </div>
+    );
 }
