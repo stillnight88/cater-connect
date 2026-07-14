@@ -20,7 +20,17 @@ export type AuditAction =
     // Vendor application events
     | 'vendor_application.submitted'
     | 'vendor_application.approved'
-    | 'vendor_application.rejected';
+    | 'vendor_application.rejected'
+
+    | 'menu_item.created'
+    | 'menu_item.published'
+    | 'menu_item.unpublished'
+    | 'menu_item.deleted'
+    | 'booking.requested'
+    | 'booking.accepted'
+    | 'booking.rejected'
+    | 'booking.completed'
+    | 'booking.cancelled';
 
 // Audit log entry, Immutable record of system actions
 export interface AuditLog {
