@@ -30,7 +30,8 @@ export type AuditAction =
     | 'booking.accepted'
     | 'booking.rejected'
     | 'booking.completed'
-    | 'booking.cancelled';
+    | 'booking.cancelled'
+    | 'review.created';
 
 // Audit log entry, Immutable record of system actions
 export interface AuditLog {

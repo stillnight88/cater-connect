@@ -36,6 +36,7 @@ export interface BookingPublic {
     cancelledBy?: 'customer' | 'vendor';
     cancelledAt?: Date;
     createdAt: Date;
+    hasReviewed?: boolean;
 }
 
 export function toBookingPublic(booking: Booking): BookingPublic {
