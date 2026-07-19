@@ -23,6 +23,7 @@ export const adminBookingsQuerySchema = z.object({
         .optional(),
 });
 
-export type CreateBookingInput = z.infer<typeof createBookingSchema>;
+export type CreateBookingFormInput = z.input<typeof createBookingSchema>;
+export type CreateBookingInput  = z.output<typeof createBookingSchema>;
 export type RejectBookingInput = z.infer<typeof rejectBookingSchema>; 
 export type AdminBookingsQuery = z.infer<typeof adminBookingsQuerySchema>;
