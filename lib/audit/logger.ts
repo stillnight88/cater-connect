@@ -250,3 +250,153 @@ export async function logVendorApplicationRejected(
         },
     });
 };
+
+export async function logMenuItemCreated(
+    actorId: string,
+    menuItemId: string,
+    metadata: { name: string; vendorId: string },
+    request?: Request
+): Promise<void> {
+    await logAuditEvent({
+        actorId,
+        action: 'menu_item.created',
+        targetId: menuItemId,
+        metadata,
+        ...(request ? getAuditContext(request) : {}),
+    });
+};
+
+export async function logMenuItemDeleted(
+    actorId: string,
+    menuItemId: string,
+    metadata: { name: string; vendorId: string },
+    request?: Request
+): Promise<void> {
+    await logAuditEvent({
+        actorId,
+        action: 'menu_item.deleted',
+        targetId: menuItemId,
+        metadata,
+        ...(request ? getAuditContext(request) : {}),
+    });
+};
+
+export async function logMenuItemPublished(
+    actorId: string,
+    menuItemId: string,
+    metadata: { name: string; vendorId: string },
+    request?: Request
+): Promise<void> {
+    await logAuditEvent({
+        actorId,
+        action: 'menu_item.published',
+        targetId: menuItemId,
+        metadata,
+        ...(request ? getAuditContext(request) : {}),
+    });
+};
+
+export async function logMenuItemUnpublished(
+    actorId: string,
+    menuItemId: string,
+    metadata: { name: string; vendorId: string },
+    request?: Request
+): Promise<void> {
+    await logAuditEvent({
+        actorId,
+        action: 'menu_item.unpublished',
+        targetId: menuItemId,
+        metadata,
+        ...(request ? getAuditContext(request) : {}),
+    });
+};
+
+export async function logBookingRequested(
+    actorId: string,
+    bookingId: string,
+    metadata: { vendorId: string; eventDate: Date; guestCount: number },
+    request?: Request
+): Promise<void> {
+    await logAuditEvent({
+        actorId,
+        action: 'booking.requested',
+        targetId: bookingId,
+        metadata,
+        ...(request ? getAuditContext(request) : {}),
+    });
+};
+
+export async function logBookingAccepted(
+    actorId: string,
+    bookingId: string,
+    metadata: { customerId: string; eventDate: Date },
+    request?: Request
+): Promise<void> {
+    await logAuditEvent({
+        actorId,
+        action: 'booking.accepted',
+        targetId: bookingId,
+        metadata,
+        ...(request ? getAuditContext(request) : {}),
+    });
+};
+
+export async function logBookingRejected(
+    actorId: string,
+    bookingId: string,
+    metadata: { customerId: string; rejectionReason: string },
+    request?: Request
+): Promise<void> {
+    await logAuditEvent({
+        actorId,
+        action: 'booking.rejected',
+        targetId: bookingId,
+        metadata,
+        ...(request ? getAuditContext(request) : {}),
+    });
+};
+
+export async function logBookingCompleted(
+    actorId: string,
+    bookingId: string,
+    metadata: { customerId: string; vendorId: string },
+    request?: Request
+): Promise<void> {
+    await logAuditEvent({
+        actorId,
+        action: 'booking.completed',
+        targetId: bookingId,
+        metadata,
+        ...(request ? getAuditContext(request) : {}),
+    });
+};
+
+export async function logBookingCancelled(
+    actorId: string,
+    bookingId: string,
+    metadata: { cancelledBy: 'customer' | 'vendor'; eventDate: Date },
+    request?: Request
+): Promise<void> {
+    await logAuditEvent({
+        actorId,
+        action: 'booking.cancelled',
+        targetId: bookingId,
+        metadata,
+        ...(request ? getAuditContext(request) : {}),
+    });
+};
+
+export async function logReviewCreated(
+    actorId: string,
+    reviewId: string,
+    metadata: { bookingId: string; vendorId: string; rating: number },
+    request?: Request
+): Promise<void> {
+    await logAuditEvent({
+        actorId,
+        action: 'review.created',
+        targetId: reviewId,
+        metadata,
+        ...(request ? getAuditContext(request) : {}),
+    });
+};
