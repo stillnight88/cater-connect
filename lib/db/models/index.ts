@@ -11,3 +11,7 @@ export { VendorProfileModel } from './vendor-profile.model';
 
 // Audit System
 export { AuditLogModel } from './audit-log.model';
+
+export { MenuItemModel } from './menu-item.model';
+export { BookingModel } from './booking.model';
+export { ReviewModel } from './review.model';
