@@ -8,7 +8,11 @@ import {
   VendorApplicationSubmittedJobData,
   VendorApplicationApprovedJobData,
   VendorApplicationRejectedJobData,
-  redisConnection
+  BookingRequestedJobData,
+  BookingAcceptedJobData,
+  BookingRejectedJobData,
+  BookingCancelledJobData,
+  redisConnection,
 } from "./queue";
 import {
   generateVerifyEmailTemplate,
@@ -17,12 +21,16 @@ import {
   generateVendorApplicationSubmittedTemplate,
   generateVendorApplicationApprovedTemplate,
   generateVendorApplicationRejectedTemplate,
+  generateBookingRequestedTemplate,
+  generateBookingAcceptedTemplate,
+  generateBookingRejectedTemplate,
+  generateBookingCancelledTemplate,
 } from "./templates";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.FROM_EMAIL;
 const FROM_NAME = process.env.FROM_NAME;
-const EMAIL_QUEUE_NAME = 'email-queue';
+const EMAIL_QUEUE_NAME = "email-queue";
 
 if (!RESEND_API_KEY) {
   throw new Error("RESEND_API_KEY environment variable is not set");
@@ -64,11 +72,7 @@ async function processVerifyEmail(data: VerifyEmailJobData) {
     otp: data.otp,
   });
 
-  return await sendEmail(
-    data.email,
-    "Verify Your Email - CaterConnect",
-    react,
-  );
+  return await sendEmail(data.email, "Verify Your Email - CaterConnect", react);
 }
 
 async function processPasswordReset(data: PasswordResetJobData) {
@@ -139,6 +143,69 @@ async function processVendorApplicationRejected(
   );
 }
 
+async function processBookingRequested(data: BookingRequestedJobData) {
+  const react = generateBookingRequestedTemplate({
+    vendorName: data.vendorName,
+    customerName: data.customerName,
+    eventDate: data.eventDate,
+    eventAddress: data.eventAddress,
+    guestCount: data.guestCount,
+    notes: data.notes,
+  });
+
+  return await sendEmail(
+    data.vendorEmail,
+    "New Booking Request - CaterConnect",
+    react,
+  );
+}
+
+async function processBookingAccepted(data: BookingAcceptedJobData) {
+  const react = generateBookingAcceptedTemplate({
+    customerName: data.customerName,
+    vendorBusinessName: data.vendorBusinessName,
+    eventDate: data.eventDate,
+    eventAddress: data.eventAddress,
+    guestCount: data.guestCount,
+  });
+
+  return await sendEmail(
+    data.customerEmail,
+    "Booking Confirmed - CaterConnect",
+    react,
+  );
+}
+
+async function processBookingRejected(data: BookingRejectedJobData) {
+  const react = generateBookingRejectedTemplate({
+    customerName: data.customerName,
+    vendorBusinessName: data.vendorBusinessName,
+    eventDate: data.eventDate,
+    rejectionReason: data.rejectionReason,
+  });
+
+  return await sendEmail(
+    data.customerEmail,
+    "Booking Request Update - CaterConnect",
+    react,
+  );
+}
+
+async function processBookingCancelled(data: BookingCancelledJobData) {
+  const react = generateBookingCancelledTemplate({
+    recipientName: data.recipientName,
+    cancelledByName: data.cancelledByName,
+    cancelledBy: data.cancelledBy,
+    eventDate: data.eventDate,
+    eventAddress: data.eventAddress,
+  });
+
+  return await sendEmail(
+    data.recipientEmail,
+    "Booking Cancelled - CaterConnect",
+    react,
+  );
+}
 
 async function processEmailJob(job: Job<EmailJobData>): Promise<{
   success: boolean;
@@ -150,28 +217,50 @@ async function processEmailJob(job: Job<EmailJobData>): Promise<{
   let result;
 
   switch (job.name) {
-    case 'verify-email':
+    case "verify-email":
       result = await processVerifyEmail(job.data as VerifyEmailJobData);
       break;
 
-    case 'password-reset':
+    case "password-reset":
       result = await processPasswordReset(job.data as PasswordResetJobData);
       break;
 
-    case 'mfa-otp':
+    case "mfa-otp":
       result = await processMFAOTP(job.data as MFAOTPJobData);
       break;
 
-    case 'vendor-application-submitted':
-      result = await processVendorApplicationSubmitted(job.data as VendorApplicationSubmittedJobData);
+    case "vendor-application-submitted":
+      result = await processVendorApplicationSubmitted(
+        job.data as VendorApplicationSubmittedJobData,
+      );
       break;
 
-    case 'vendor-application-approved':
-      result = await processVendorApplicationApproved(job.data as VendorApplicationApprovedJobData);
+    case "vendor-application-approved":
+      result = await processVendorApplicationApproved(
+        job.data as VendorApplicationApprovedJobData,
+      );
       break;
 
-    case 'vendor-application-rejected':
-      result = await processVendorApplicationRejected(job.data as VendorApplicationRejectedJobData);
+    case "vendor-application-rejected":
+      result = await processVendorApplicationRejected(
+        job.data as VendorApplicationRejectedJobData,
+      );
+      break;
+
+    case 'booking-requested':
+      result = await processBookingRequested(job.data as BookingRequestedJobData);
+      break;
+
+    case 'booking-accepted':
+      result = await processBookingAccepted(job.data as BookingAcceptedJobData);
+      break;
+
+    case 'booking-rejected':
+      result = await processBookingRejected(job.data as BookingRejectedJobData);
+      break;
+
+    case 'booking-cancelled':
+      result = await processBookingCancelled(job.data as BookingCancelledJobData);
       break;
 
     default:
@@ -185,38 +274,37 @@ async function processEmailJob(job: Job<EmailJobData>): Promise<{
   console.log(`Email sent successfully: ${result.messageId}`);
 
   return result;
-};
+}
 
 export const emailWorker = new Worker<EmailJobData>(
-    EMAIL_QUEUE_NAME,
-    processEmailJob,
-    {
-        connection: redisConnection,  
-        concurrency: 5,
-        limiter: { max: 10, duration: 1000 },
-    }
+  EMAIL_QUEUE_NAME,
+  processEmailJob,
+  {
+    connection: redisConnection,
+    concurrency: 5,
+    limiter: { max: 10, duration: 1000 },
+  },
 );
 
 // Worker event handlers
-emailWorker.on('completed', (job) => {
+emailWorker.on("completed", (job) => {
   console.log(`Email worker completed job ${job.id}`);
 });
 
-emailWorker.on('failed', (job, error) => {
+emailWorker.on("failed", (job, error) => {
   console.error(`Email worker failed job ${job?.id}:`, error.message);
 });
 
-emailWorker.on('error', (error) => {
-  console.error('Email worker error:', error);
+emailWorker.on("error", (error) => {
+  console.error("Email worker error:", error);
 });
 
 export function startEmailWorker() {
-  console.log('Email worker started');
+  console.log("Email worker started");
   return emailWorker;
 }
 
 export async function closeEmailWorker() {
   await emailWorker.close();
-  console.log('Email worker closed');
-};
-
+  console.log("Email worker closed");
+}

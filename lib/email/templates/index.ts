@@ -4,3 +4,7 @@ export { generateMFAOTPTemplate } from './mfa-otp';
 export { generateVendorApplicationSubmittedTemplate } from './vendor-application-submitted';
 export { generateVendorApplicationApprovedTemplate } from './vendor-application-approved';
 export { generateVendorApplicationRejectedTemplate } from './vendor-application-rejected';
+export { generateBookingAcceptedTemplate } from './booking-accepted';
+export { generateBookingCancelledTemplate } from './booking-cancelled';
+export { generateBookingRejectedTemplate } from './booking-rejected';
+export { generateBookingRequestedTemplate } from './booking-requested';
