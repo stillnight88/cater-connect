@@ -19,7 +19,11 @@ export type EmailJobType =
     | 'mfa-otp'
     | 'vendor-application-submitted'
     | 'vendor-application-approved'
-    | 'vendor-application-rejected';
+    | 'vendor-application-rejected'
+    | 'booking-requested'
+    | 'booking-accepted'
+    | 'booking-rejected'
+    | 'booking-cancelled';
 
 export interface VerifyEmailJobData {
     email: string;
@@ -59,13 +63,53 @@ export interface VendorApplicationRejectedJobData {
     rejectionReason: string;
 }
 
+export interface BookingRequestedJobData {
+    vendorEmail: string;
+    vendorName: string;
+    customerName: string;
+    eventDate: string;
+    eventAddress: string;
+    guestCount: number;
+    notes?: string;
+}
+
+export interface BookingAcceptedJobData {
+    customerEmail: string;
+    customerName: string;
+    vendorBusinessName: string;
+    eventDate: string;
+    eventAddress: string;
+    guestCount: number;
+}
+
+export interface BookingRejectedJobData {
+    customerEmail: string;
+    customerName: string;
+    vendorBusinessName: string;
+    eventDate: string;
+    rejectionReason: string;
+}
+
+export interface BookingCancelledJobData {
+    recipientEmail: string;
+    recipientName: string;
+    cancelledByName: string;
+    cancelledBy: 'customer' | 'vendor';
+    eventDate: string;
+    eventAddress: string;
+}
+
 export type EmailJobData =
     | VerifyEmailJobData
     | PasswordResetJobData
     | MFAOTPJobData
     | VendorApplicationSubmittedJobData
     | VendorApplicationApprovedJobData
-    | VendorApplicationRejectedJobData;
+    | VendorApplicationRejectedJobData
+    | BookingRequestedJobData
+    | BookingAcceptedJobData
+    | BookingRejectedJobData
+    | BookingCancelledJobData;
 
 // All email jobs are added to this queue
 export const emailQueue = new Queue<EmailJobData>(EMAIL_QUEUE_NAME, {
@@ -128,6 +172,34 @@ export async function queueVendorApplicationApproved(data: VendorApplicationAppr
 export async function queueVendorApplicationRejected(data: VendorApplicationRejectedJobData) {
     return await emailQueue.add('vendor-application-rejected', data, {
         priority: 2, // Normal priority
+    });
+};
+
+export async function queueBookingRequested(data: BookingRequestedJobData) {
+    return await emailQueue.add('booking-requested', data, {
+        priority: 2,
+        jobId: `booking-requested-${data.vendorEmail}-${Date.now()}`,
+    });
+};
+
+export async function queueBookingAccepted(data: BookingAcceptedJobData) {
+    return await emailQueue.add('booking-accepted', data, {
+        priority: 2,
+        jobId: `booking-accepted-${data.customerEmail}-${Date.now()}`,
+    });
+};
+
+export async function queueBookingRejected(data: BookingRejectedJobData) {
+    return await emailQueue.add('booking-rejected', data, {
+        priority: 2,
+        jobId: `booking-rejected-${data.customerEmail}-${Date.now()}`,
+    });
+};
+
+export async function queueBookingCancelled(data: BookingCancelledJobData) {
+    return await emailQueue.add('booking-cancelled', data, {
+        priority: 2,
+        jobId: `booking-cancelled-${data.recipientEmail}-${Date.now()}`,
     });
 };
 
