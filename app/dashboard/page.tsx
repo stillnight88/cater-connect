@@ -8,7 +8,12 @@ import { useQuery } from '@tanstack/react-query';
 
 import { useAuth, useHasRole } from '@/components/providers/auth-provider';
 import { myApplicationApi, listVendorApplicationsApi } from '@/lib/api/vendor-application-api';
+import { getMyMenuApi } from '@/lib/api/vendor-api';
+import { getIncomingBookingsApi } from '@/lib/api/booking-api';
+import { groupBookingsByStage } from '@/lib/booking/grouping';
 import type { VendorApplicationPublic } from '@/types/vendor';
+import type { MenuItemPublic } from '@/types/menu';
+import type { BookingPublic } from '@/types/booking';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -60,10 +65,32 @@ export default function DashboardPage() {
         enabled: isAuthenticated && user?.role === 'admin',
     });
 
+    const { data: menuResult, isLoading: isMenuLoading } = useQuery({
+        queryKey: ['menu'],
+        queryFn: async () => {
+            const token = await getAccessToken();
+            if (!token) throw new Error('Not authenticated');
+            return getMyMenuApi(token);
+        },
+        enabled: isAuthenticated && user?.role === 'vendor',
+    });
+
+    const { data: incomingResult, isLoading: isIncomingLoading } = useQuery({
+        queryKey: ['bookings', 'incoming'],
+        queryFn: async () => {
+            const token = await getAccessToken();
+            if (!token) throw new Error('Not authenticated');
+            return getIncomingBookingsApi(token);
+        },
+        enabled: isAuthenticated && user?.role === 'vendor',
+    });
+
     const myApplication = myApplicationResult?.success ? myApplicationResult.application : null;
     const pendingCount = pendingApplicationsResult?.success
         ? pendingApplicationsResult.applications.length
         : 0;
+    const menuItems = menuResult?.success ? menuResult.items : [];
+    const incomingBookings = incomingResult?.success ? incomingResult.bookings : [];
 
     async function handleLogout() {
         await logout();
@@ -77,6 +104,7 @@ export default function DashboardPage() {
             </div>
         );
     }
+
     return (
         <div className="min-h-screen bg-background">
             <header className="border-b">
@@ -122,10 +150,12 @@ export default function DashboardPage() {
                         )}
 
                         {isVendor && (
-                            <p className="text-sm text-muted-foreground">
-                                Manage your menu and view incoming booking
-                                requests from here.
-                            </p>
+                            <VendorDashboardSection
+                                menuItems={menuItems}
+                                bookings={incomingBookings}
+                                isMenuLoading={isMenuLoading}
+                                isBookingsLoading={isIncomingLoading}
+                            />
                         )}
 
                         {isAdmin && (
@@ -136,9 +166,43 @@ export default function DashboardPage() {
             </main>
         </div>
     )
-}
+};
 
 function CustomerDashboardSection({
+    application,
+    isLoading,
+}: {
+    application: VendorApplicationPublic | null;
+    isLoading: boolean;
+}) {
+    return (
+        <div className="space-y-5">
+            <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                    Browse vendors and manage your event bookings from here.
+                </p>
+                <div className="flex items-center gap-2 flex-wrap">
+                    <Button asChild variant="outline" size="sm">
+                        <Link href="/vendors">Browse vendors</Link>
+                    </Button>
+                    <Button asChild variant="outline" size="sm">
+                        <Link href="/bookings">My bookings</Link>
+                    </Button>
+                </div>
+            </div>
+
+            <Separator />
+
+            {/* Vendor application status */}
+            <VendorApplicationStatus
+                application={application}
+                isLoading={isLoading}
+            />
+        </div>
+    );
+}
+
+function VendorApplicationStatus({
     application,
     isLoading,
 }: {
@@ -158,7 +222,6 @@ function CustomerDashboardSection({
         return (
             <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
-                    Browse vendors and manage your event bookings from here.
                     Want to offer your own catering services?
                 </p>
                 <Button asChild variant="outline" size="sm">
@@ -192,7 +255,7 @@ function CustomerDashboardSection({
                 <p className="text-sm text-muted-foreground">
                     Your application for{' '}
                     <span className="font-medium">{application.businessName}</span>{' '}
-                    was approved. Vendor-specific tools are coming in Phase 3.
+                    was approved. Refresh the page to access your vendor tools.
                 </p>
             </div>
         );
@@ -219,6 +282,72 @@ function CustomerDashboardSection({
     );
 };
 
+function VendorDashboardSection({
+    menuItems,
+    bookings,
+    isMenuLoading,
+    isBookingsLoading,
+}: {
+    menuItems: MenuItemPublic[];
+    bookings: BookingPublic[];
+    isMenuLoading: boolean;
+    isBookingsLoading: boolean;
+}) {
+    if (isMenuLoading || isBookingsLoading) {
+        return (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading your dashboard…
+            </div>
+        );
+    }
+
+    const publishedCount = menuItems.filter((i) => i.status === 'published').length;
+    const { requested, accepted } = groupBookingsByStage(bookings);
+    const pendingCount = requested.length;
+    const confirmedCount = accepted.length;
+
+    return (
+        <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+                Manage your menu and view incoming booking requests from here.
+            </p>
+            <div className="flex items-center gap-3 flex-wrap">
+                {pendingCount > 0 && (
+                    <Badge variant="secondary">
+                        {pendingCount} pending request{pendingCount !== 1 ? 's' : ''}
+                    </Badge>
+                )}
+                {confirmedCount > 0 && (
+                    <Badge variant="outline" className="border-green-600 text-green-600">
+                        {confirmedCount} confirmed
+                    </Badge>
+                )}
+                {publishedCount > 0 && (
+                    <Badge variant="outline">
+                        {publishedCount} published item{publishedCount !== 1 ? 's' : ''}
+                    </Badge>
+                )}
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+                <Button asChild variant="outline" size="sm">
+                    <Link href="/vendor/dashboard">Vendor dashboard</Link>
+                </Button>
+                <Button asChild variant="outline" size="sm">
+                    <Link href="/vendor/menu">Manage menu</Link>
+                </Button>
+                <Button asChild variant="outline" size="sm">
+                    <Link href="/vendor/bookings">
+                        {pendingCount > 0
+                            ? `Review ${pendingCount} request${pendingCount !== 1 ? 's' : ''}`
+                            : 'View bookings'}
+                    </Link>
+                </Button>
+            </div>
+        </div>
+    );
+};
+
 function AdminDashboardSection({ pendingCount }: { pendingCount: number }) {
     return (
         <div className="space-y-3">
@@ -226,13 +355,18 @@ function AdminDashboardSection({ pendingCount }: { pendingCount: number }) {
                 Review vendor applications and oversee platform activity
                 from here.
             </p>
-            <Button asChild variant="outline" size="sm">
-                <Link href="/admin/vendor-applications">
-                    {pendingCount > 0
-                        ? `Review ${pendingCount} pending application${pendingCount === 1 ? '' : 's'}`
-                        : 'View vendor applications'}
-                </Link>
-            </Button>
+            <div className="flex items-center gap-2 flex-wrap">
+                <Button asChild variant="outline" size="sm">
+                    <Link href="/admin/vendor-applications">
+                        {pendingCount > 0
+                            ? `Review ${pendingCount} pending application${pendingCount === 1 ? '' : 's'}`
+                            : 'View vendor applications'}
+                    </Link>
+                </Button>
+                <Button asChild variant="outline" size="sm">
+                    <Link href="/admin/bookings">View all bookings</Link>
+                </Button>
+            </div>
         </div>
     );
-}
+};
