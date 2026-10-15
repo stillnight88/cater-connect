@@ -38,6 +38,16 @@ const ACTION_FILTER_OPTIONS: AuditAction[] = [
     'vendor_application.submitted',
     'vendor_application.approved',
     'vendor_application.rejected',
+    'menu_item.created',
+    'menu_item.published',
+    'menu_item.unpublished',
+    'menu_item.deleted',
+    'booking.requested',
+    'booking.accepted',
+    'booking.rejected',
+    'booking.completed',
+    'booking.cancelled',
+    'review.created',
 ];
 
 const PAGE_SIZE = 20;
