@@ -124,7 +124,7 @@ Data Layer
 ### Features
 
 - Access Tokens
-- Refresh Tokens
+- Refresh Token Rotation
 - OTP-based verification
 - Role-Based Access Control (RBAC)
 
@@ -175,7 +175,7 @@ Reason not chosen:
 ### Current Responsibilities
 
 - BullMQ queue backend.
-- Temporary data storage where appropriate.
+- Temporary application data where appropriate.
 
 ### Planned Responsibilities
 
