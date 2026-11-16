@@ -164,9 +164,47 @@ Failure Cases:
 
 ---
 
+## Flow 7 - Vendor Menu Publishing Flow
+
+**Goal:** Allow vendors to control when a menu is visible to customers.
+
+**Flow:**
+
+```
+Vendor Creates Menu
+        │
+        ▼
+Saved as Draft
+        │
+        ▼
+Publish Menu
+        │
+        ▼
+Visible to Customers
+        │
+        ├──────────────┐
+        ▼              │
+Unpublish Menu         │
+        │              │
+        ▼              │
+Hidden from Customers ─┘
+
+Delete Menu (Permanent Removal)
+```
+
+**Business Rules**
+
+- Newly created menus are saved as **Draft** by default.
+- Draft menus are **not visible** to customers.
+- Only **Published** menus are visible in the public marketplace.
+- Vendors can **Unpublish** a menu without deleting it.
+- Deleting a menu permanently removes it from the platform.
+
+---
+
 # 4. Admin Flows
 
-## Flow 7 — Review Vendor Applications
+## Flow 8 — Review Vendor Applications
 
 1. Administrator views pending vendor applications.
 2. Administrator reviews application details.
@@ -191,7 +229,7 @@ Failure Cases:
 
 ---
 
-## Flow 8 — View Audit Logs (Read Flow)
+## Flow 9 — View Audit Logs (Read Flow)
 
 1. Administrator opens the audit log.
 2. Backend retrieves audit events.
