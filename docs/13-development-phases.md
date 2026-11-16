@@ -131,7 +131,7 @@ Deliver the primary business functionality of the platform.
 
 ## Major Deliverables
 
-- Vendor service management
+- Vendor service & menu management
 - Service discovery
 - Booking system
 - Booking lifecycle management
@@ -164,17 +164,19 @@ Phase 3 is complete when:
 
 ---
 
-# Phase 4 — Quality & Production Readiness
+# Phase 4 — Refinement & Quality Improvements
 
 ## Objective
 
-Improve quality, maintainability, and operational readiness without significantly expanding product scope.
+Improve the application's usability, maintainability, and overall quality without significantly expanding the planned project scope.
 
 ---
 
 ## Major Deliverables
 
 - User interface improvements
+- User experience improvements
+- Small feature additions
 - Codebase refactoring
 - Performance optimization
 - Rate limiting
@@ -194,7 +196,7 @@ Before Phase 4 is complete:
 - Performance improvements are measurable.
 - Security remains uncompromised.
 - Documentation accurately reflects the project.
-- The application is portfolio-ready.
+- The application provides a polished and complete demonstration of the planned project scope.
 
 ---
 
