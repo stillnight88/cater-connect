@@ -46,7 +46,7 @@ Client state is temporary and may be discarded without affecting business data.
 
 ---
 
-## Cached State (Deferred Decision)
+## Caching Strategy (Deferred Decision)
 
 > **Decision Status:** Deferred
 

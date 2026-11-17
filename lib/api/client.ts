@@ -75,3 +75,60 @@ export async function apiGet<TResponse>(
         } satisfies ApiError;
     }
 };
+
+export async function apiPatch<TResponse>(
+    path: string,
+    options: FetchOptions = {}
+): Promise<TResponse | ApiError> {
+    try {
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+        };
+
+        if (options.accessToken) {
+            headers['Authorization'] = `Bearer ${options.accessToken}`;
+        }
+
+        const response = await fetch(path, {
+            method: 'PATCH',
+            headers,
+            credentials: 'include', // Required — sends httpOnly refresh_token cookie
+            body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+        });
+
+        const data = await response.json();
+        return data as TResponse | ApiError;
+    } catch {
+        return {
+            success: false,
+            error: 'Network error. Please check your connection.',
+        } satisfies ApiError;
+    }
+};
+
+export async function apiDelete<TResponse>(
+    path: string,
+    options: FetchOptions = {}
+): Promise<TResponse | ApiError> {
+    try {
+        const headers: Record<string, string> = {};
+
+        if (options.accessToken) {
+            headers['Authorization'] = `Bearer ${options.accessToken}`;
+        }
+
+        const response = await fetch(path, {
+            method: 'DELETE',
+            headers,
+            credentials: 'include', // Required — sends httpOnly refresh_token cookie
+        });
+
+        const data = await response.json();
+        return data as TResponse | ApiError;
+    } catch {
+        return {
+            success: false,
+            error: 'Network error. Please check your connection.',
+        } satisfies ApiError;
+    }
+};

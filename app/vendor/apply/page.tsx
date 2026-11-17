@@ -11,7 +11,7 @@ import {
     submitVendorApplicationSchema,
     type SubmitVendorApplicationInput,
 } from '@/lib/validation/schemas/vendor.schema';
-import { submitVendorApplicationApi } from '@/lib/api/vendor-api';
+import { submitVendorApplicationApi } from '@/lib/api/vendor-application-api';
 import { useAuth } from '@/components/providers/auth-provider';
 
 import { Button } from '@/components/ui/button';

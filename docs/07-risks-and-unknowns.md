@@ -161,7 +161,7 @@ Potential risks:
 - Background job failures.
 - Email delivery failures.
 - Deployment configuration issues.
-- Missing monitoring during production.
+- Limited monitoring during deployment and ongoing maintenance.
 
 ### Mitigation
 
@@ -208,7 +208,7 @@ Potential risks:
 
 ---
 
-# 8. Resolved Decisions
+# 8. Resolved Architectural Decisions
 
 The following implementation risks have already been resolved during development:
 

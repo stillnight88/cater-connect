@@ -173,11 +173,10 @@ Each business domain owns its own business rules and should expose controlled op
 
 The following modules provide technical capabilities to support the business domains.
 
-- MongoDB
-- Mongoose
-- Redis
-- BullMQ
-- Resend
+- Data Persistence
+- Background Job Processing
+- Email Delivery
+- Caching
 - Audit Logging
 - Validation
 - Environment Configuration

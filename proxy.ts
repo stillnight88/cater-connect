@@ -17,9 +17,9 @@ const PUBLIC_ROUTES = [
     '/api/auth/mfa/verify',
     '/api/auth/resend-verification',
 
-    // Public vendor routes
     '/api/vendors',
     '/api/vendors/search',
+    '/api/vendors/*',
 
     // Health check
     '/api/health',
@@ -31,8 +31,11 @@ const PROTECTED_ROUTES = [
     '/api/vendor',
     '/api/admin',
     '/api/vendor-application',
-    '/api/auth/me', 
-    '/api/audit-log'
+    '/api/auth/me',
+    '/api/audit-log',
+    '/api/menu',
+    '/api/bookings',
+    '/api/admin/bookings',
 ];
 
 // const ADMIN_ROUTES = [
@@ -43,9 +46,9 @@ function isPublicRoute(pathname: string): boolean {
     return PUBLIC_ROUTES.some((route) => {
         if (pathname === route) return true;
 
-        // Wildcard match 
+        // Wildcard match
         if (route.endsWith('/*')) {
-            const baseRoute = pathname.slice(0, -2);
+            const baseRoute = route.slice(0, -2);
             return pathname.startsWith(baseRoute);
         }
 

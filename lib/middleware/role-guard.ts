@@ -126,3 +126,11 @@ export async function requirePermission(
 export async function requireAdmin(request: NextRequest): Promise<Session | NextResponse> {
     return requireRole(request, 'admin');
 };
+
+export async function requireVendor(request: NextRequest): Promise<Session | NextResponse> {
+    return requireRole(request, 'vendor');
+};
+
+export async function requireCustomer(request: NextRequest): Promise<Session | NextResponse> {
+    return requireRole(request, 'customer');
+};

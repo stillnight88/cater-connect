@@ -16,6 +16,16 @@ const AUDIT_ACTIONS = [
     'vendor_application.submitted',
     'vendor_application.approved',
     'vendor_application.rejected',
+    'menu_item.created',
+    'menu_item.published',
+    'menu_item.unpublished',
+    'menu_item.deleted',
+    'booking.requested',
+    'booking.accepted',
+    'booking.rejected',
+    'booking.completed',
+    'booking.cancelled',
+    'review.created',
 ] as const satisfies readonly AuditAction[];
 
 export const auditLogQuerySchema = z.object({

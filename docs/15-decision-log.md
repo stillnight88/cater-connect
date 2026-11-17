@@ -172,10 +172,10 @@ Active
 
 Implement authentication using:
 
-- JWT
-- Refresh Tokens
+- JWT Access Tokens
+- Refresh Token Rotation
 - OTP Verification
-- RBAC
+- Role-Based Access Control (RBAC)
 
 **Reason**
 
@@ -300,6 +300,49 @@ Separates authentication from business onboarding while improving security and a
 - Phase 3
 - Phase 5
 - Phase 7
+
+---
+
+## BUS-003 — Booking Workflow
+
+**Status**
+
+Active
+
+**Decision**
+
+Adopt a controlled booking lifecycle with defined state transitions and ownership rules.
+
+**Reason**
+
+Provides a predictable booking process while supporting future workflow expansion.
+
+**Related Phases**
+
+- Phase 3
+- Phase 5
+- Phase 10
+
+---
+
+## BUS-004 — Review Ownership Rules
+
+**Status**
+
+Active
+
+**Decision**
+
+Allow reviews only for completed bookings and enforce ownership rules between customers, bookings, and vendors.
+
+**Reason**
+
+Preserves review integrity while preventing invalid submissions.
+
+**Related Phases**
+
+- Phase 3
+- Phase 5
 
 ---
 

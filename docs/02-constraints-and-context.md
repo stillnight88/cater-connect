@@ -6,8 +6,9 @@
 
 ## 1. Time & Effort Constraints
 
-- Estimated Development Timeline: Approximately 6 months (part-time)
+- Estimated Timeline to Complete the Initial Project Scope: Approximately 6 months (part-time)
 - Effort Level: Casual but consistent (not full-time)
+- This estimate applies only to the initially planned scope. As a learning project, the application is expected to continue evolving through refactoring, optimization, experimentation, and additional features beyond this timeline.
 
 ### Implications
 

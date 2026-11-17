@@ -1,7 +1,17 @@
 import type { VendorApplicationPublic, VendorApplicationStatus } from '@/types/vendor';
-import type { RejectVendorApplicationInput } from '@/lib/validation/schemas/vendor.schema';
+import type { RejectVendorApplicationInput, SubmitVendorApplicationInput } from '@/lib/validation/schemas';
 import { apiPost, apiGet, ApiError } from './client';
 
+export interface SubmitVendorApplicationResponse {
+    success: true;
+    message: string;
+    application: {
+        id: string;
+        businessName: string;
+        status: string;
+        submittedAt: string;
+    };
+}
 interface ListVendorApplicationsResponse {
     success: true;
     applications: VendorApplicationPublic[];
@@ -22,11 +32,21 @@ interface MyApplicationResponse {
     application: VendorApplicationPublic | null;
 }
 
+export async function submitVendorApplicationApi(
+    input: SubmitVendorApplicationInput,
+    accessToken: string
+): Promise<SubmitVendorApplicationResponse | ApiError> {
+    return apiPost<SubmitVendorApplicationResponse>(
+        '/api/vendor-application/submit',
+        { body: input, accessToken }
+    );
+};
+
 export async function listVendorApplicationsApi(
     status: VendorApplicationStatus | undefined,
     accessToken: string,
 ): Promise<ListVendorApplicationsResponse | ApiError> {
-    return apiGet<ListVendorApplicationsResponse>('/api/vendor-application', { accessToken, params: { status, }, },);
+    return apiGet<ListVendorApplicationsResponse>('/api/vendor-application', { accessToken, params: { status } });
 };
 
 export async function getVendorApplicationApi(
